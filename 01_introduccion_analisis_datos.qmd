@@ -1,0 +1,250 @@
+---
+title: "Introducción al análisis de datos"
+author:
+  - Armel Brizuela Rodríguez
+language:
+  es:
+  title-block-author-single: "Autor"
+format:
+  html:
+    embed-resources: true
+    toc: true
+editor: visual
+editor_options:
+  chunk_output_type: console
+---
+
+## Instalación de paquetes
+
+```{r, eval=FALSE}
+install.packages("remotes")
+```
+
+```{r, eval=FALSE}
+remotes::install_github(
+  "brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_gitlab(
+  "brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_bitbucket(
+  "brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+## Activación de paquetes
+
+```{r}
+
+```
+
+## Panorama general del análisis de datos
+
+El análisis de datos puede resumirse en una ecuación simple pero poderosa. Los **datos** (*DATA*) son las observaciones o puntuaciones que queremos analizar, usualmente numéricas. El **modelo** (*MODEL*) es una descripción compacta de esos datos: hace una predicción específica para cada observación y es mucho más fácil de comunicar y de usar para construir teorías. El **error** (*ERROR*) es la discrepancia entre el modelo y los datos, es decir, lo que el modelo no logra explicar.
+
+El objetivo del análisis de datos es construir un modelo que represente bien los datos haciendo el error lo más pequeño posible. En el caso ideal en que ERROR = 0, los datos quedarían perfectamente representados por el modelo.
+
+## Fórmula base
+
+$$
+\begin{align}
+DATA = MODEL + ERROR \\
+Y = \hat{Y} + E \\\\
+ERROR = DATA - MODEL\\
+E = Y - \hat{Y}
+\end{align}
+$$
+
+### Notación
+
+Para hablar con precisión sobre los componentes de la ecuación, se usa la siguiente notación:
+
+-   $Y_i$ representa la $i$-ésima observación en los datos.
+-   $\hat{Y}_i$ representa la predicción del modelo para la $i$-ésima observación.
+-   $\beta_0, \beta_1, \ldots, \beta_{p-1}$ son los **parámetros verdaderos** del modelo (desconocidos).
+-   $b_0, b_1, \ldots, b_{p-1}$ son las **estimaciones** de esos parámetros, calculadas a partir de los datos.
+-   $\varepsilon_i$ es el error verdadero (desconocido) asociado a la $i$-ésima observación.
+-   $e_i$ es el residuo estimado: $e_i = Y_i - \hat{Y}_i$.
+
+Cuando se usan los valores $\beta$ en la ecuación, el símbolo para el error es siempre $\varepsilon_i$. Cuando se usan las estimaciones $b$, el símbolo para el error es siempre $e_i$, porque este puede calcularse una vez que se obtiene $\hat{Y}_i$.
+
+### Ejemplo: uso de internet por país
+
+Para ilustrar la fórmula base, consideremos los datos del porcentaje de personas que usaron internet en el año 2021 en 45 países (variable `InternetUse2021` del conjunto de datos `Figures_1_1_and_6_1`). Un modelo simple predice el mismo porcentaje para todos los países; uno más complejo ajusta la predicción según características de cada país, como el tipo de gobierno o el tamaño de su economía de servicios.
+
+## Modelo sin estimación de parámetros
+
+El modelo más simple posible consiste en predecir *a priori* —sin examinar los datos— un valor fijo para todas las observaciones. En este modelo no hay parámetros que estimar: sin importar cómo sean los datos, la predicción siempre es la misma.
+
+$$
+\begin{align}
+Y_i = 70 + \varepsilon_i \\
+Y_i = 70 + e_i
+\end{align}
+$$
+
+En este caso, se predice que el porcentaje de uso de internet es 70 en cada uno de los 45 países. Este modelo califica como modelo porque hace una predicción para cada observación, pero no se ajusta a los datos: la predicción es siempre 70, independientemente de los valores observados.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## Modelo con un parámetro
+
+Se puede mejorar el modelo anterior usando uno que sigue siendo simple —predice el mismo valor para todos los países— pero deja ese valor como un **parámetro desconocido** $\beta_0$ que se estima a partir de los datos. El promedio de los 45 porcentajes sería una estimación adecuada de $\beta_0$.
+
+$$
+\begin{align}
+Y_i = \beta_0 + \varepsilon_i \\
+Y_i = b_0 + e_i
+\end{align}
+$$
+
+Es importante notar que nunca podemos conocer $\beta_0$ con certeza; solo podemos estimarlo. La estimación $b_0$ minimiza el error total, lo que hace que este modelo represente mejor los datos que el modelo sin parámetros.
+
+```{r}
+
+```
+
+## Modelo con dos parámetros
+
+### Predictor categórico
+
+El modelo puede hacerse más complejo añadiendo un parámetro que ajusta la predicción según una variable categórica. Por ejemplo, los países con gobiernos democráticos podrían tener mayor uso de internet que los autoritarios. El modelo parte de un porcentaje base $\beta_0$ para todos los países y lo ajusta hacia arriba en $\beta_1$ si el país es democrático, o hacia abajo si es autoritario.
+
+```{r}
+
+```
+
+$$
+\begin{align}
+Y_i = \beta_0 + \beta_1 + \varepsilon_i \\
+Y_i = \beta_0 - \beta_1 + \varepsilon_i \\\\
+Y_i = b_0 + b_1 + e_i \\
+Y_i = b_0 - b_1 + e_i
+\end{align}
+$$
+
+### Predictor continuo
+
+Otro tipo de modelo con dos parámetros utiliza un **predictor continuo**. Por ejemplo, se puede predecir el uso de internet según el porcentaje de empleados en el sector de servicios (`SrvEMP2021`), bajo la hipótesis de que los países con economías de servicios más desarrolladas tienen mayor uso de internet.
+
+El modelo parte de un porcentaje base $\beta_0$ y ajusta la predicción en $\beta_1$ por cada punto porcentual que el país se aleje de la media en la variable de servicios. $X_i$ representa cuánto se aleja el país de la media en esa variable.
+
+$$
+\begin{align}
+Y_i = \beta_0 + \beta_1X_i + \varepsilon_i \\
+Y_i = b_0 + b_1X_i + e_i
+\end{align}
+$$
+
+```{r}
+
+```
+
+## Modelo con más de dos parámetros
+
+El modelo puede seguir haciéndose más complejo añadiendo parámetros para otras variables: nivel de ingreso, nivel educativo, porcentaje de población urbana, etc. Cada parámetro $\beta_j$ especifica cuánto se debe ajustar la predicción hacia arriba o hacia abajo en función del $j$-ésimo predictor $X_{ij}$.
+
+$$
+\begin{align}
+Y_i = \beta_0 + \beta_1X_{i1} + \beta_2X_{i2} + \cdots + \beta_jX_{ij} + \cdots + \beta_{p-1}X_{i,p-1} + \varepsilon_i \\
+Y_i = b_0 + b_1X_{i1} + b_2X_{i2} + \cdots + b_jX_{ij} + \cdots + b_{p-1}X_{i,p-1} + e_i
+\end{align}
+$$
+
+```{r}
+
+```
+
+### El límite de la complejidad: parsimonia
+
+Podría parecer que la mejor estrategia es añadir tantos parámetros como sea posible. Sin embargo, el número de observaciones impone un límite inherente al número de parámetros que puede tener el modelo. En el extremo, se podría tener un parámetro separado para cada observación, lo que reduciría el error a cero, pero el modelo sería simplemente una copia de los datos: no aportaría ninguna información nueva, ninguna base para probar teorías ni capacidad para hacer predicciones en circunstancias ligeramente distintas.
+
+El siguiente modelo ilustra este extremo: usa 44 variables generadas aleatoriamente para predecir el uso de internet en 45 países. Con tantos parámetros como observaciones, el ajuste es casi perfecto, pero el modelo no tiene ningún valor explicativo.
+
+```{r}
+
+```
+
+El objetivo ideal es encontrar el modelo **más pequeño y sencillo** que proporcione una descripción adecuada de los datos, de manera que el error no sea demasiado grande. Esto implica encontrar el equilibrio entre dos objetivos en conflicto: minimizar el error (añadiendo parámetros) y maximizar la parsimonia (eliminando parámetros).
+
+## Reducción proporcional del error
+
+Para decidir si vale la pena añadir parámetros a un modelo, se comparan dos modelos:
+
+-   **Modelo compacto** (Modelo C): el modelo más simple, sin los parámetros adicionales.
+-   **Modelo aumentado** (Modelo A): incluye todos los parámetros del Modelo C más parámetros adicionales.
+
+Los parámetros adicionales del Modelo A nunca pueden aumentar el error; solo pueden reducirlo o dejarlo igual:
+
+$$
+ERROR(A) \leq ERROR(C)
+$$
+
+La **Reducción Proporcional del Error** (PRE) mide qué proporción del error del Modelo C se reduce al usar el Modelo A:
+
+$$
+PRE = \frac{ERROR(C) - ERROR(A)}{ERROR(C)}
+$$
+
+Una expresión equivalente es:
+
+$$
+PRE = 1 - \frac{ERROR(A)}{ERROR(C)}
+$$
+
+-   Si los parámetros adicionales no sirven de nada, $ERROR(A) = ERROR(C)$ y $PRE = 0$.
+-   Si el Modelo A ajusta perfectamente, $ERROR(A) = 0$ y $PRE = 1$.
+-   Por lo tanto, PRE siempre está entre 0 y 1.
+
+Cuanto mayor sea PRE, más vale la pena el costo de la complejidad adicional. Un PRE pequeño indica que es preferible quedarse con el modelo más simple y parsimonioso.
+
+En el lenguaje de la inferencia estadística, el Modelo C corresponde a la **hipótesis nula** (los parámetros adicionales son iguales a cero) y el Modelo A corresponde a la **hipótesis alternativa**.
+
+```{r}
+
+```
+
+El siguiente cálculo compara el modelo sin parámetros (`modelo0`, que predice siempre 70) con el modelo saturado de 44 variables aleatorias (`modelo45`). Aunque PRE sea alto, este resultado no es útil porque el Modelo A no tiene valor explicativo real: sus predictores son números aleatorios.
+
+```{r}
+
+```
+
+## Objetos en R
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
