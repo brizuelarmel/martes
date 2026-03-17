@@ -90,11 +90,11 @@ $$
 Se predice 70 para los 45 países. Califica como modelo porque produce una predicción por observación, pero no se ajusta a los datos: la predicción es siempre 70.
 
 ```{r}
-
+constante <- rep(70, nrow(Figures_1_1_and_6_1))
 ```
 
 ```{r}
-
+modelo0 <- lm(InternetUse2021 ~ 0 + offset(constante), Figures_1_1_and_6_1)
 ```
 
 ## Modelo con un parámetro
@@ -109,7 +109,7 @@ Y_i = b_0 + e_i
 $$
 
 ```{r}
-
+modelo1 <- lm(InternetUse2021 ~ 1, Figures_1_1_and_6_1)
 ```
 
 ## Modelo con dos parámetros
@@ -119,11 +119,14 @@ $$
 Se añade un parámetro que ajusta la predicción según una variable categórica. Los países democráticos podrían tener mayor uso de internet que los autoritarios: $\beta_0$ es la base y $\beta_1$ ajusta hacia arriba o hacia abajo según el grupo.
 
 ```{r}
-
+Figures_1_1_and_6_1 <- mutate(
+  Figures_1_1_and_6_1,
+  Group = if_else(Group == "NSR", -1, 1)
+)
 ```
 
 ```{r}
-
+modelo2A <- lm(InternetUse2021 ~ 1 + Group, Figures_1_1_and_6_1)
 ```
 
 $$
@@ -147,11 +150,14 @@ Y_i = b_0 + b_1X_i + e_i
 $$
 
 ```{r}
-
+Figures_1_1_and_6_1 <- mutate(
+  Figures_1_1_and_6_1,
+  SrvEMP2021 = SrvEMP2021 - mean(SrvEMP2021)
+)
 ```
 
 ```{r}
-
+modelo2B <- lm(InternetUse2021 ~ 1 + SrvEMP2021, Figures_1_1_and_6_1)
 ```
 
 ## Modelo con más de dos parámetros
@@ -166,7 +172,7 @@ Y_i = b_0 + b_1X_{i1} + b_2X_{i2} + \cdots + b_jX_{ij} + \cdots + b_{p-1}X_{i,p-
 $$
 
 ```{r}
-
+modelo3 <- lm(InternetUse2021 ~ 1 + SrvEMP2021 + UrbanPop2021, Figures_1_1_and_6_1)
 ```
 
 ### El límite de la complejidad: parsimonia
@@ -174,7 +180,8 @@ $$
 Añadir tantos parámetros como observaciones reduce el error a cero, pero el modelo es una copia de los datos: no aporta información nueva ni capacidad predictiva. El modelo siguiente lo ilustra: 44 variables aleatorias para 45 países producen un ajuste perfecto sin ningún valor explicativo.
 
 ```{r}
-
+aleatorios <- data.frame(replicate(44, rnorm(45)))
+modelo45 <- lm(Figures_1_1_and_6_1$InternetUse2021 ~ ., aleatorios)
 ```
 
 El objetivo es el modelo **más pequeño y sencillo** con error aceptable: equilibrio entre minimizar el error (añadiendo parámetros) y maximizar la parsimonia (eliminándolos).
@@ -213,31 +220,42 @@ Mayor PRE → mayor justificación para la complejidad adicional. PRE pequeño �
 En inferencia estadística: Modelo C = **hipótesis nula** (parámetros adicionales = 0); Modelo A = **hipótesis alternativa**.
 
 ```{r}
-
+PRE <- function(modelo_c, modelo_a) {
+  ERROR_C <- sum((modelo_c$residuals)**2)
+  ERROR_A <- sum((modelo_a$residuals)**2)
+  PRE_valor <- (ERROR_C - ERROR_A)/ERROR_C
+  PRE_valor
+}
 ```
 
 Comparación entre `modelo0` (predice siempre 70) y `modelo45` (44 variables aleatorias). El PRE será alto, pero el resultado no es útil: los predictores son aleatorios.
 
 ```{r}
-
+PRE(modelo2B, modelo45)
 ```
 
 ## Objetos en R y modelos
 
 A continuación se muestran los objetos en R correspondientes a cada uno de los términos de las fórmulas.
 
-```{r}
+Valores predichos
 
+```{r}
+Yhat <- fitted(modelo3)
+```
+
+Coeficienttes o estimaciones de parámetros
+
+```{r}
+b <- coef(modelo3)
+```
+
+Residuos
+
+```{r}
+e <- residuals(modelo0)
 ```
 
 ```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
+summary(modelo3)
 ```
