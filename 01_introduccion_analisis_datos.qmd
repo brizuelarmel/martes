@@ -116,7 +116,7 @@ modelo1 <- lm(InternetUse2021 ~ 1, Figures_1_1_and_6_1)
 
 ### Predictor categórico
 
-Se añade un parámetro que ajusta la predicción según una variable categórica. Los países democráticos podrían tener mayor uso de internet que los autoritarios: $\beta_0$ es la base y $\beta_1$ ajusta hacia arriba o hacia abajo según el grupo.
+Se añade un parámetro que ajusta la predicción según una variable categórica. Los países conmaor riqueza (`R`) podrían tener mayor uso de internet que los países con menor riqueza (`NSR`): $\beta_0$ es la base y $\beta_1$ ajusta hacia arriba o hacia abajo según el grupo.
 
 ```{r}
 Figures_1_1_and_6_1 <- mutate(
