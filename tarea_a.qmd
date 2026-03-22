@@ -1,0 +1,107 @@
+---
+title: "Tarea A"
+author:
+  - Nombre de estudiante
+editor: visual
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, eval=FALSE}
+install.packages("remotes")
+```
+
+```{r, eval=FALSE}
+remotes::install_github("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_gitlab("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_bitbucket("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r}
+require(ps0046)
+```
+
+# Instrucciones generales
+
+1.  Cada pregunta debe contestarse con base en lo abordado en clase.
+2.  Las tarea únicamente podrán entregarse mediante el vínculo respectivo habilitado en Mediación Virtual.
+3.  Solamente se aceptará la entrega de un archivo .qmd con las respuestas a cada pregunta.
+4.  No se realizarán revisiones de la tarea antes de su entrega definitiva en Mediación Virtual.
+
+# Aspectos por calificar
+
+-   Todo el código de R es correcto, necesario y suficiente para contestar las preguntas (5 pts)
+-   Todo el código de R se basa en el utilizado en las clases (5 pts)
+-   Todas las interpretaciones son correctas, necesarias y suficientes para contestar las preguntas (5 pts)
+-   Todas las interpretaciones se basan en los contenidos abordados en las clases (5 pts)
+-   Entrega la tarea en Mediación Virtual antes de la fecha y hora límites (1 pt)
+-   Al ejecutar **Run All**, todo el código de R del archivo .qmd se ejecuta sin errores (1 pt)
+-   Presenta todas las respuestas en los espacios designados para estas (1 pt)
+-   Todas las respuestas generadas con código de R se presentan clara y explícitamente al ejecutarlo (1 pt)
+-   No hay errores de redacción en las interpretaciones (1 pt)
+
+# Preguntas
+
+## Pregunta 1
+
+-   Estime la correlación entre dos variables continuas de `Figures_1_1_and_6_1`.
+
+```{r}
+
+```
+
+-   Comente cuál es el valor de la correlación y si es o no es estadísticamente significativa.
+
+**Comentario:**
+
+## Pregunta 2
+
+-   Estime un modelo de 3 parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
+
+```{r}
+
+```
+
+-   Muestre con una función/comando las estimaciones de los 4 parámetros del modelo.
+
+```{r}
+
+```
+
+## Pregunta 3
+
+-   Estime un modelo de 4 parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
+
+```{r}
+
+```
+
+-   Comente el valor de PRE que se genera al comparar el modelo de 3 parámetros con el de 4 parámetros.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 4
+
+-   Calcule la media, la mediana y la moda de una variable continua en `Figures_1_1_and_6_1`.
+
+```{r}
+
+```
+
+## Pregunta
+
+-   Calcule el error cuadrático medio que se produce al estimar un modelo de un parámetro para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
+
+```{r}
+
+```
