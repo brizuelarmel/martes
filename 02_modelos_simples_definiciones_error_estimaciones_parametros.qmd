@@ -5,10 +5,6 @@ author:
 language:
   es:
   title-block-author-single: "Autor"
-format:
-  html:
-    embed-resources: true
-    toc: true
 editor: visual
 editor_options:
   chunk_output_type: console
@@ -100,12 +96,12 @@ Esta definición es insatisfactoria porque los errores positivos y negativos se 
 
 ```
 
-### Suma de errores absolutos (SEA)
+### Suma de errores absolutos (SAE)
 
 Elimina el problema de la cancelación tomando el valor absoluto de cada residuo antes de sumarlos:
 
 $$
-SEA = \sum_{i=1}^{n} |e_i| = \sum_{i=1}^{n} |Y_i - b_0|
+SAE = \sum_{i=1}^{n} |e_i| = \sum_{i=1}^{n} |Y_i - b_0|
 $$
 
 Esta definición trata igual un error grande (por ejemplo, 4) que varios errores pequeños que sumen lo mismo (por ejemplo, cuatro errores de 1).
@@ -114,15 +110,15 @@ Esta definición trata igual un error grande (por ejemplo, 4) que varios errores
 
 ```
 
-### Suma de errores cuadráticos (SEC)
+### Suma de errores cuadráticos (SSE)
 
 Eleva al cuadrado cada residuo antes de sumarlos, eliminando los signos y penalizando más los errores grandes:
 
 $$
-SEC = \sum_{i=1}^{n} e_i^2 = \sum_{i=1}^{n} (Y_i - b_0)^2
+SSE = \sum_{i=1}^{n} e_i^2 = \sum_{i=1}^{n} (Y_i - b_0)^2
 $$
 
-Un error de magnitud 4 contribuye $4^2 = 16$ al total, mientras que cuatro errores de magnitud 1 contribuyen $4 \times 1^2 = 4$. La SEC es la definición estándar en el análisis de datos.
+Un error de magnitud 4 contribuye $4^2 = 16$ al total, mientras que cuatro errores de magnitud 1 contribuyen $4 \times 1^2 = 4$. La SSE es la definición estándar en el análisis de datos.
 
 ```{r}
 
@@ -135,8 +131,8 @@ Cada definición de error conduce a un estimador distinto de $\beta_0$. En la si
 | Definición de error | Estimador de $b_0$ |
 |------------------------------------|------------------------------------|
 | Conteo de errores (CE) | **Moda**: valor más frecuente de $Y_i$ |
-| Suma de errores absolutos (SEA) | **Mediana**: observación central de $Y_i$ |
-| Suma de errores cuadráticos (SEC) | **Media**: promedio aritmético de $Y_i$ |
+| Suma de errores absolutos (SAE) | **Mediana**: observación central de $Y_i$ |
+| Suma de errores cuadráticos (SSE) | **Media**: promedio aritmético de $Y_i$ |
 
 ### Moda
 
@@ -152,7 +148,7 @@ Minimiza el conteo de errores. Es el valor de $Y_i$ que aparece con mayor frecue
 
 ### Mediana
 
-Minimiza la suma de errores absolutos (SEA). Es la observación central cuando los datos se ordenan de menor a mayor. Si hay un número par de observaciones, se promedia el par central.
+Minimiza la suma de errores absolutos (SAE). Es la observación central cuando los datos se ordenan de menor a mayor. Si hay un número par de observaciones, se promedia el par central.
 
 ```{r}
 
@@ -166,7 +162,7 @@ La mediana no se modifica cuando una observación extrema se vuelve aún más ex
 
 ### Media
 
-Minimiza la suma de errores cuadráticos (SEC). Es el promedio aritmético de todas las observaciones:
+Minimiza la suma de errores cuadráticos (SSE). Es el promedio aritmético de todas las observaciones:
 
 $$
 \bar{Y} = \frac{\sum_{i=1}^{n} Y_i}{n}
@@ -182,96 +178,141 @@ $$
 
 A diferencia de la mediana, la media se desplaza cuando una observación extrema se vuelve más extrema. Esto la hace sensible a valores atípicos.
 
-## Demostración de que la media minimiza la SEC
+## Demostración de que la media minimiza la SSE
 
-Se demostrará formalmente que $\bar{Y}$ produce el menor valor posible de la SEC. El punto de partida es asumir que el mejor estimador $\hat{Y}$ es distinto de $\bar{Y}$.
+### Paso 1: Suposición
 
-La SEC es:
-
-$$
-SEC = \sum_{i=1}^{n} (Y_i - \hat{Y})^2
-$$
-
-Se agrega $\bar{Y} - \bar{Y} = 0$ dentro del paréntesis sin alterar el resultado:
+Supongamos que $\hat{Y}$, el mejor estimador para reducir la suma de errores cuadrados, es algo diferente a la media:
 
 $$
-SEC = \sum_{i=1}^{n} (Y_i - \bar{Y} + \bar{Y} - \hat{Y})^2
+\overline{Y}=\frac{\sum\limits_{i=1}^{n}Y_{i}}{n}
 $$
 
-Reordenando y expandiendo el cuadrado:
+### Paso 2: Definir SSE
+
+La suma de errores cuadrados es:
 
 $$
-SEC = \sum_{i=1}^{n} \left[(Y_i - \bar{Y}) + (\bar{Y} - \hat{Y})\right]^2
+\mathrm{SSE}=\sum_{i=1}^{n}\left(Y_{i}-\hat{Y}\right)^{2}
 $$
 
-$$
-SEC = \sum_{i=1}^{n} (Y_i - \bar{Y})^2 + 2(\bar{Y} - \hat{Y})\sum_{i=1}^{n}(Y_i - \bar{Y}) + n(\bar{Y} - \hat{Y})^2
-$$
+### Paso 3: Sumar cero
 
-El término del medio contiene $\sum_{i=1}^{n}(Y_i - \bar{Y})$, que siempre es cero:
+Dado que $\bar{Y}-\bar{Y}=0$, podemos sumar cero dentro del paréntesis sin cambiar el SSE:
 
 $$
-\sum_{i=1}^{n}(Y_i - \bar{Y}) = \sum_{i=1}^{n} Y_i - n\bar{Y} = \sum_{i=1}^{n} Y_i - n \cdot \frac{\sum_{i=1}^{n} Y_i}{n} = 0
+\mathrm{SSE}=\sum_{i=1}^{n}\left(Y_{i}-\hat{Y}+\overline{Y}-\overline{Y}\right)^{2}
 $$
 
-Por lo tanto:
+### Paso 4: Reorganizar términos
 
 $$
-SEC = \sum_{i=1}^{n}(Y_i - \bar{Y})^2 + n(\bar{Y} - \hat{Y})^2
+\mathrm{SSE}=\sum_{i=1}^{n}\left[\left(Y_{i}-\overline{Y}\right)+\left(\overline{Y}-\hat{Y}\right)\right]^{2}
 $$
 
-El segundo término, $n(\bar{Y} - \hat{Y})^2$, es no negativo y se anula solo cuando $\hat{Y} = \bar{Y}$. Cualquier otro estimador produce un SEC mayor. Luego, la SEC mínima es:
+### Paso 5: Expandir el cuadrado
 
 $$
-SEC_{\min} = \sum_{i=1}^{n}(Y_i - \bar{Y})^2
+\mathrm{SSE}=\sum_{i=1}^{n}\left[\left(Y_{i}-\overline{Y}\right)^{2}+2\left(Y_{i}-\overline{Y}\right)\left(\overline{Y}-\hat{Y}\right)+\left(\overline{Y}-\hat{Y}\right)^{2}\right]
 $$
 
-y el estimador que la alcanza es la media aritmética $\bar{Y}$.
+### Paso 6: Separar las sumas
+
+$$
+\mathrm{SSE}=\sum_{i=1}^{n}\Big(Y_{i}-\overline{Y}\Big)^{2}+\sum_{i=1}^{n}\Big[2\Big(Y_{i}-\overline{Y}\Big)\Big(\overline{Y}-\hat{Y}\Big)\Big]+\sum_{i=1}^{n}\Big(\overline{Y}-\hat{Y}\Big)^{2}
+$$
+
+### Paso 7: Simplificar constantes
+
+El último término no contiene subíndices, por lo que la sumatoria equivale a multiplicar por $n$. Las constantes del término medio pueden factorizarse:
+
+$$
+\mathrm{SSE}=\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)^{2}+2\left(\overline{Y}-\hat{Y}\right)\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)+n\left(\overline{Y}-\hat{Y}\right)^{2}
+$$
+
+### Paso 8: Evaluar el término medio
+
+La sumatorio de las desviaciones de cada valor con respecto a la media es siempre igual a 0.
+
+$$
+\begin{aligned}
+\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)&=\sum_{i=1}^{n}Y_{i}-n\overline{Y}\\
+&=\sum_{i=1}^{n}Y_{i}-n\left(\frac{\sum_{i=1}^{n}Y_{i}}{n}\right)\\
+&=\sum_{i=1}^{n}Y_{i}-\sum_{i=1}^{n}Y_{i}\\
+&=0
+\end{aligned}
+$$
+
+### Paso 9: Eliminar el término medio
+
+Dado que el término medio incluye una multiplicación por cero, se elimina:
+
+$$
+\mathrm{SSE}=\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)^{2}+n\left(\overline{Y}-\hat{Y}\right)^{2}
+$$
+
+### Paso 10: Minimizar el SSE
+
+Queremos que el SSE sea lo más pequeño posible:
+
+-   El primer término $\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)^{2}$ es fijo.
+-   El segundo término $n(\bar{Y}-\hat{Y})^{2}$ siempre es positivo (o cero) porque cualquier número elevado al cuadrado es siempre igual o mayor que 0.
+-   Para minimizar el SSE, establecemos $\hat{Y}=\bar{Y}$, lo que hace que $n(\bar{Y}-\hat{Y})^{2}=0$.
+
+### Paso 11: Conclusión
+
+El SSE mínimo se alcanza cuando $\hat{Y}=\bar{Y}$:
+
+$$
+\mathrm{SSE}=\sum_{i=1}^{n}\left(Y_{i}-\overline{Y}\right)^{2}
+$$
+
+Cualquier otra elección de $\hat{Y}$ produciría un SSE mayor. Por lo tanto, **la media es el mejor estimador para reducir el SSE**.
 
 ## Descripción del error
 
-Reportar el error total (SEA o SEC) no es adecuado para comparar conjuntos de datos de distinto tamaño: una muestra con 500 observaciones tenderá a tener un error total mayor que una con 50, aunque la dispersión individual sea menor. Para cada estimador de $\beta_0$ existe un índice de *error típico* que no depende del tamaño de la muestra.
+Reportar el error total (SAE o SSE) no es adecuado para comparar conjuntos de datos de distinto tamaño: una muestra con 500 observaciones tenderá a tener un error total mayor que una con 50, aunque la dispersión individual sea menor. Para cada estimador de $\beta_0$ existe un índice de *error típico* que no depende del tamaño de la muestra.
 
 ### Error modal
 
-Cuando se usa el CE como criterio, los residuos solo toman dos valores: $e_i = 0$ si la predicción es exacta o $e_i = 1$ en caso contrario. El error típico es simplemente la proporción de errores, es decir, el error modal. Se usa raramente en la práctica.
+Cuando se usa el CE como criterio, los residuos solo toman dos valores: $e_i = 0$ si la predicción es exacta o $e_i = 1$ en caso contrario. El error típico es simplemente la moda de los errores.
 
 ```{r}
 
 ```
 
-### Desviación absoluta mediana (DAM)
+### Desviación absoluta mediana (MAD)
 
-Cuando se usa la SEA como criterio, el índice de error típico es la mediana de los valores absolutos de los residuos $|e_i|$:
+Cuando se usa la SAE como criterio, el índice de error típico es la mediana de los valores absolutos de los residuos $|e_i|$:
 
 $$
-DAM = \text{mediana}(|Y_i - b_0|)
+MAD = \text{mediana}(|Y_i - b_0|)
 $$
 
 ```{r}
 
 ```
 
-La DAM es robusta frente a observaciones atípicas, al igual que la mediana.
+La MAD es robusta frente a observaciones atípicas, al igual que la mediana.
 
-### Varianza y desviación estándar
+### MSE y ROOT MSE
 
-Cuando se usa la SEC como criterio, el índice de error típico se deriva del error cuadrático medio (ECM). En un modelo con $p$ parámetros estimados, el ECM es:
-
-$$
-ECM = \frac{SEC}{n - p} = \frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - p}
-$$
-
-Para el modelo simple con un parámetro ($p = 1$), el ECM recibe el nombre de **varianza** y se denota $s^2$:
+Cuando se usa la SSE como criterio, el índice de error típico se denomina el error cuadrático medio (MSE). En un modelo con $p$ parámetros estimados, el MSE es:
 
 $$
-s^2 = \frac{SEC}{n - 1} = \frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - 1}
+MSE = \frac{SSE}{n - p} = \frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - p}
 $$
 
-La **desviación estándar** es la raíz cuadrada de la varianza y expresa el error típico en las mismas unidades que los datos originales:
+Para el modelo simple con un parámetro ($p = 1$), el MSE recibe el nombre de **varianza** y se denota $s^2$:
 
 $$
-s = \sqrt{s^2} = \sqrt{\frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - 1}}
+s^2 = \frac{SSE}{n - 1} = \frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - 1}
+$$
+
+El **ROOT MSE** es la raíz cuadrada del MSE y expresa el error típico en las mismas unidades que los datos originales:
+
+$$
+s = \sqrt{s^2} = \sqrt{\frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - p}}
 $$
 
 ```{r}
@@ -286,7 +327,7 @@ Verificación con las funciones de R:
 
 ### Coeficiente de variación (CV)
 
-Cuando la magnitud de la desviación estándar es proporcional a la magnitud de la media, el **coeficiente de variación** permite comparar la dispersión relativa entre distintas variables o grupos:
+Este coeficiente permite comparar la dispersión entre distintas variables o grupos:
 
 $$
 CV = \frac{s}{\bar{Y}}
@@ -298,7 +339,7 @@ $$
 
 Un CV alto indica que la dispersión es grande en relación con el nivel medio de la variable.
 
-## Ejemplo: autoubicación ideológica en Costa Rica (P16ST)
+## Estimación de modelo con lm()
 
 Se aplica el modelo simple de un parámetro a la variable `P16ST` del Latinobarómetro Costa Rica 2023, que mide la autoubicación ideológica en una escala de 0 (izquierda) a 10 (derecha). El modelo es:
 
@@ -312,25 +353,9 @@ Se busca el estimador $b_0$ de $\beta_0$ que minimice el error según cada crite
 
 ```
 
-### Moda
-
 ```{r}
 
 ```
-
-### Mediana
-
-```{r}
-
-```
-
-### Media
-
-```{r}
-
-```
-
-### Comparación de estimadores y errores típicos
 
 ```{r}
 
