@@ -61,7 +61,16 @@ El objetivo es encontrar el valor de $b_0$ que haga los residuos $e_i = Y_i - \h
 La variable `P16ST` del Latinobarómetro Costa Rica 2023 mide la autoubicación ideológica en una escala de 0 (izquierda) a 10 (derecha). Se ajusta el modelo simple con un parámetro para predecir la posición ideológica de cada persona encuestada.
 
 ```{r}
+latino <- mutate(
+  Latinobarometro_2023_Costa_Rica_Spss_esp_v1,
+  P16ST = na_if(P16ST, 97)
+)
 
+latino <- drop_na(latino, P16ST)
+
+Yi <- pull(latino, P16ST)
+
+Yi <- haven::zap_label(latino$P16ST)
 ```
 
 ## Definiciones de error
@@ -79,7 +88,7 @@ $$
 donde $I(e_i) = 1$ si $e_i \neq 0$ e $I(e_i) = 0$ si $e_i = 0$.
 
 ```{r}
-
+CE <- function(b0, y) sum(y != b0)
 ```
 
 ### Suma de errores (SE)
@@ -93,7 +102,7 @@ $$
 Esta definición es insatisfactoria porque los errores positivos y negativos se cancelan. Un error de $+1000$ y uno de $-1000$ producirían $SE = 0$, lo que sugeriría falsamente que no hay error.
 
 ```{r}
-
+SE <- function(b0, y) sum(y - b0)
 ```
 
 ### Suma de errores absolutos (SAE)
@@ -107,7 +116,7 @@ $$
 Esta definición trata igual un error grande (por ejemplo, 4) que varios errores pequeños que sumen lo mismo (por ejemplo, cuatro errores de 1).
 
 ```{r}
-
+SAE <- function(b0, y) sum(abs(y - b0))
 ```
 
 ### Suma de errores cuadráticos (SSE)
@@ -121,7 +130,7 @@ $$
 Un error de magnitud 4 contribuye $4^2 = 16$ al total, mientras que cuatro errores de magnitud 1 contribuyen $4 \times 1^2 = 4$. La SSE es la definición estándar en el análisis de datos.
 
 ```{r}
-
+SSE <- function(b0, y) sum((y - b0)^2)
 ```
 
 ## Estimadores de $\beta_0$
@@ -139,11 +148,11 @@ Cada definición de error conduce a un estimador distinto de $\beta_0$. En la si
 Minimiza el conteo de errores. Es el valor de $Y_i$ que aparece con mayor frecuencia. En variables continuas suele no existir una moda única, por lo que su utilidad es limitada.
 
 ```{r}
-
+sapply(0:10, CE, Yi)
 ```
 
 ```{r}
-
+b0_moda <- table(Yi) |> which.max() |> names() |> as.numeric()
 ```
 
 ### Mediana
@@ -151,11 +160,11 @@ Minimiza el conteo de errores. Es el valor de $Y_i$ que aparece con mayor frecue
 Minimiza la suma de errores absolutos (SAE). Es la observación central cuando los datos se ordenan de menor a mayor. Si hay un número par de observaciones, se promedia el par central.
 
 ```{r}
-
+sapply(0:10, SAE, Yi)
 ```
 
 ```{r}
-
+b0_mediana <- median(Yi)
 ```
 
 La mediana no se modifica cuando una observación extrema se vuelve aún más extrema. Si la observación más alejada del centro se duplica, la observación central no cambia.
@@ -169,11 +178,17 @@ $$
 $$
 
 ```{r}
+x <- seq(0, 10, 0.01)
 
+estimaciones <- sapply(x, SSE, Yi)
+
+plot(x, estimaciones, type = "l")
+
+abline(v = x[which.min(estimaciones)])
 ```
 
 ```{r}
-
+b0_media <- mean(Yi)
 ```
 
 A diferencia de la mediana, la media se desplaza cuando una observación extrema se vuelve más extrema. Esto la hace sensible a valores atípicos.
@@ -278,7 +293,8 @@ Reportar el error total (SAE o SSE) no es adecuado para comparar conjuntos de da
 Cuando se usa el CE como criterio, los residuos solo toman dos valores: $e_i = 0$ si la predicción es exacta o $e_i = 1$ en caso contrario. El error típico es simplemente la moda de los errores.
 
 ```{r}
-
+error_modal <- table(b0_moda == Yi) |> which.max() |> names() |> as.logical() |> as.numeric()
+error_modal
 ```
 
 ### Desviación absoluta mediana (MAD)
@@ -290,7 +306,8 @@ MAD = \text{mediana}(|Y_i - b_0|)
 $$
 
 ```{r}
-
+MAD <- median(abs(Yi - b0_mediana))
+MAD
 ```
 
 La MAD es robusta frente a observaciones atípicas, al igual que la mediana.
@@ -316,13 +333,18 @@ s = \sqrt{s^2} = \sqrt{\frac{\sum_{i=1}^{n}(Y_i - \bar{Y})^2}{n - p}}
 $$
 
 ```{r}
+n <- length(Yi)
+p <- 1
 
+MSE <- SSE(b0_media, Yi) / (n - p)
+ROOT_MSE <- sqrt(MSE)
 ```
 
 Verificación con las funciones de R:
 
 ```{r}
-
+var(Yi)
+sd(Yi)
 ```
 
 ### Coeficiente de variación (CV)
@@ -334,7 +356,7 @@ CV = \frac{s}{\bar{Y}}
 $$
 
 ```{r}
-
+sd(Yi) / mean(Yi)
 ```
 
 Un CV alto indica que la dispersión es grande en relación con el nivel medio de la variable.
@@ -350,13 +372,17 @@ $$
 Se busca el estimador $b_0$ de $\beta_0$ que minimice el error según cada criterio.
 
 ```{r}
-
+modelo <- lm(P16ST ~ 1, latino)
 ```
 
 ```{r}
-
+coef(modelo)
 ```
 
 ```{r}
+sigma(modelo)
+```
 
+```{r}
+summary(modelo)
 ```
