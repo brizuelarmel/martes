@@ -62,13 +62,13 @@ require(ps0046)
 
 ## Pregunta 2
 
--   Estime un modelo de 3 parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
+-   Estime un modelo de **tres** parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
 
 ```{r}
 
 ```
 
--   Muestre con una función/comando las estimaciones de los 4 parámetros del modelo.
+-   Muestre con una función/comando las estimaciones de los **tres** parámetros del modelo.
 
 ```{r}
 
@@ -76,7 +76,7 @@ require(ps0046)
 
 ## Pregunta 3
 
--   Estime un modelo de 4 parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
+-   Estime un modelo de **cuatro** parámetros para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
 
 ```{r}
 
@@ -98,10 +98,11 @@ require(ps0046)
 
 ```
 
-## Pregunta
+## Pregunta 5
 
 -   Calcule el error cuadrático medio que se produce al estimar un modelo de un parámetro para predecir la variable `P16ST` de `Latinobarometro_2023_Costa_Rica_Spss_esp_v1`.
 
 ```{r}
+
 
 ```
