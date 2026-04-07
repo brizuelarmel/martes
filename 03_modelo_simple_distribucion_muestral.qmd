@@ -27,6 +27,8 @@ remotes::install_bitbucket("brizuelarmel/ps0046", force = T, dependencies = T, u
 ```
 
 ```{r}
+require(patchwork)
+require(ggplot2)
 require(ps0046)
 require(dplyr)
 ```
@@ -35,141 +37,135 @@ require(dplyr)
 
 En la clase anterior se estableció que distintas definiciones de error agregado conducen a estimadores distintos del parámetro $\beta_0$ en el modelo simple $Y_i = \beta_0 + \varepsilon_i$:
 
-| Definición de error               | Estimador de $b_0$ |
-|-----------------------------------|--------------------|
-| Conteo de errores (CE)            | Moda               |
-| Suma de errores absolutos (SAE)   | Mediana            |
-| Suma de errores cuadráticos (SSE) | Media              |
+| Definición de error                       | Estimador de $b_0$ |
+|-------------------------------------------|--------------------|
+| Conteo de errores (CE)                    | Moda               |
+| Suma de errores absolutos (SAE -\> MAD)   | Mediana            |
+| Suma de errores cuadráticos (SSE -\> MSE) | Media              |
 
-La moda se descarta rápidamente en variables continuas por no tener una solución única. La disputa real es entre las dos opciones restantes: SAE con la mediana y SSE con la media. Además, en la clase anterior se demostró algebraicamente que la media es el valor de $b_0$ que minimiza la SSE para cualquier conjunto de datos. Sin embargo, ese resultado no responde por qué la SSE es un criterio mejor que la SAE.
+La moda se descarta rápidamente en variables continuas por no tener una solución única.
 
-La pregunta que guía esta clase es: **¿cuál de las dos es mejor, y bajo qué condiciones?**
+Las opciones de interés son SAE/MAD con la mediana y SSE/MSE con la media.
 
-Para responderla necesitamos una herramienta que nos permita comparar estimadores no solo en una muestra concreta, sino en general. Esa herramienta son las **distribuciones muestrales**.
+**¿Cuál de las dos es mejor, y bajo qué condiciones?**
 
-### Datos de ejemplo: extraversión en Costa Rica
+Necesitamos una herramienta que nos permita comparar estimaciones no solo en una muestra concreta, sino en general: las **distribuciones muestrales**.
 
-En la clase anterior se trabajó con los datos del Latinobarómetro como una muestra real. En esta clase necesitamos un escenario diferente: tratar un conjunto de datos **como si fuera una población**, de modo que conozcamos los parámetros verdaderos y podamos evaluar cuánto se alejan los estimadores muestrales de esos parámetros. Para ello utilizaremos datos del Inventario de Personalidad Big Five aplicado en Costa Rica. El dataframe `big5CR` contiene 598 personas que respondieron 10 ítems de extraversión (EXT1 a EXT10) en una escala de 1 a 5.
+### Extraversión en Costa Rica
 
-```{r}
-big5CR <- mutate(big5CR, extraversion = rowMeans(across(EXT1:EXT10)))
-```
+Vamos a tratar una muestra **como si fuera una población**, de modo que conozcamos los parámetros verdaderos y podamos evaluar cuánto se alejan las estimaciones muestrales de esos parámetros.
 
-Al tratar estos datos como población, $\beta_0$ y $\sigma^2$ son parámetros conocidos (no hay que estimarlos), y los errores $\varepsilon_i = Y_i - \beta_0$ son los errores verdaderos, no residuos muestrales $e_i$. En la práctica nunca conocemos $\beta_0$, pero este artificio nos permite evaluar qué tan bien distintos estimadores lo recuperan a partir de muestras. Los parámetros verdaderos son:
+Utilizaremos datos del Inventario de Personalidad Big Five aplicado en Costa Rica. El dataframe `big5CR` contiene 598 personas que respondieron 10 ítems de extraversión (EXT1 a EXT10) en una escala de 1 a 5.
 
 ```{r}
-Yi_pob <- big5CR$extraversion
-
-beta_0     <- mean(Yi_pob)
-sigma2_pob <- mean((Yi_pob - beta_0)^2)
-sigma_pob  <- sqrt(sigma2_pob)
+big5CR <- big5CR |> 
+  select(EXT1:EXT10) |>
+  mutate(extraversion = rowMeans(across(everything())))
 ```
 
-El error de cada persona bajo el modelo simple es la diferencia entre su puntuación observada y el parámetro verdadero:
+Al tratar estos datos como población, $\beta_0$ y $\sigma^2$ son parámetros conocidos, y los errores $\varepsilon_i = Y_i - \beta_0$ son los errores verdaderos, no residuos muestrales $e_i$. En la práctica nunca conocemos $\beta_0$, pero este artificio nos permite evaluar qué tan bien distintas estimaciones muestrales recuperan el parámetro poblacional.
 
 ```{r}
-epsilon <- Yi_pob - beta_0
+Yi    <- big5CR$extraversion
+beta0 <- mean(Yi)
+MSE   <- mean((Yi - beta0)^2) # varianza
+RMSE  <- sqrt(MSE)            # desviación estándar
+```
+
+El error de cada persona en este modelo es la diferencia entre su puntuación observada y el parámetro verdadero:
+
+```{r}
+epsilon <- Yi - beta0
 ```
 
 ```{r}
-hist(epsilon, breaks = 30)
+ggplot() +
+  geom_histogram(aes(x = epsilon), bins = 30, fill = "lightblue") +
+  labs(x = "Epsilon")
 ```
 
-## Distribuciones muestrales: la herramienta para comparar estimadores
+## Distribuciones muestrales
 
 En la práctica nunca observamos la población completa. Trabajamos con una **muestra**: un subconjunto que podría haber sido diferente. La media y la mediana calculadas en una muestra particular rara vez coinciden exactamente con $\beta_0$.
 
-Si pudiéramos extraer muchas muestras del mismo tamaño y calcular un estadístico en cada una, obtendríamos su **distribución muestral**: la distribución de ese estadístico a lo largo de todas las muestras posibles. Esta distribución nos dice cómo se comporta el estimador en general, no solo en una muestra concreta.
+Si pudiéramos extraer muchas muestras del mismo tamaño y con cada una estimáramos $\beta_0$, obtendríamos la **distribución muestral de** $\beta_0$. Esta distribución nos dice cómo se comporta $\beta_0$ en general, no solo en una muestra concreta.
 
-### Simulación: media vs. mediana con $n = 20$
+### Simulación
 
 ```{r}
-set.seed(42)
-
-n          <- 20
-n_muestras <- 10000
-
-medias_20   <- numeric(n_muestras)
-medianas_20 <- numeric(n_muestras)
-
-for (i in 1:n_muestras) {
-  muestra     <- sample(Yi_pob, size = n, replace = TRUE)
-  medias_20[i]   <- mean(muestra)
-  medianas_20[i] <- median(muestra)
-}
+medias20 <- replicate(10000, mean(sample(Yi, size = 20, replace = T)))
+medianas20 <- replicate(10000, median(sample(Yi, size = 20, replace = T)))
 ```
 
 ```{r}
-hist(medianas_20, breaks = 50, col = "red")
+ggplot() +
+  geom_histogram(aes(x = medianas20), bins = 30, fill = "lightblue") +
+  geom_histogram(aes(x = medias20), bins = 30, fill = "darkblue") +
+  labs(x = "")
+```
+
+A simple vista, ambas distribuciones están centradas alrededor de $\beta_0$, pero la de la mediana parece algo más dispersa. Para evaluar esto con precisión, examinamos tres propiedades deseables en una estimación.
+
+## Propiedades de las estimaciones
+
+### Ausencia de sesgo (*unbiasness*)
+
+Las estimaciones sin sesgo son aquellas con una distribución muestral cuyo centro es igual al parámetro poblacional. Es decir, si en promedio no sobreestima ni subestima $\beta_0$.
+
+```{r}
+beta0
+mean(medias20)
+mean(medianas20)
+```
+
+Ambas estimaciones son insesgadas porque sus promedios son aproximadamente iguales a $\beta_0$. Por lo tando, la aunsencia de sesgo no nos permite decidir entre la media y la mediana.
+
+### Consistencia
+
+Una estimación es **consistente** si su distribución muestral se vuelve más estrecha/angosta conforme aumenta el tamaño de la muestra.
+
+```{r}
+medias100 <- replicate(10000, mean(sample(Yi, size = 100, replace = T)))
+medianas100 <- replicate(10000, median(sample(Yi, size = 100, replace = T)))
 ```
 
 ```{r}
-hist(medias_20, breaks = 50, col = "blue", add = T)
-abline(v = beta_0, col = "green")
-```
-
-A simple vista, ambas distribuciones están centradas alrededor de $\beta_0$, pero la de la mediana parece algo más dispersa. Para evaluar esto con precisión, examinamos tres propiedades deseables en un estimador.
-
-## Propiedades de los estimadores
-
-### Primera propiedad: insesgadez (*unbiasness*)
-
-Un estimador es **insesgado** si el promedio de su distribución muestral es igual al parámetro verdadero. Es decir, si en promedio no sobreestima ni subestima $\beta_0$.
-
-```{r}
-beta_0
-mean(medias_20)
-mean(medianas_20)
-```
-
-Ambos estimadores son insesgados: sus promedios son prácticamente iguales a $\beta_0$. **La insesgadez no nos ayuda a elegir.**
-
-### Segunda propiedad: consistencia
-
-Un estimador es **consistente** si su distribución muestral se vuelve más estrecha conforme aumenta el tamaño de la muestra. Comparemos $n = 20$ con $n = 100$:
-
-```{r}
-#set.seed(42)
-
-n <- 100
-medias_100  <- numeric(n_muestras)
-medianas_100 <- numeric(n_muestras)
-
-for (i in 1:n_muestras) {
-  muestra       <- sample(Yi_pob, size = n, replace = TRUE)
-  medias_100[i]   <- mean(muestra)
-  medianas_100[i] <- median(muestra)
-}
+ggplot() +
+  geom_histogram(aes(x = medias20), bins = 30, fill = "lightblue") +
+  geom_histogram(aes(x = medias100), bins = 30, fill = "darkblue") +
+  labs(x = "Medias")
 ```
 
 ```{r}
-hist(medias_20, col = "lightblue", main = paste(var(medias_20), var(medias_100)))
-hist(medias_100, col = "darkblue", add = T, main = "")
+ggplot() +
+  geom_histogram(aes(x = medianas20), bins = 30, fill = "lightblue") +
+  geom_histogram(aes(x = medianas100), bins = 30, fill = "darkblue") +
+  labs(x = "Medianas")
+```
+
+Al aumentar el tamaño de la muestra, ambas distribuciones muestrales se estrechan, de modo que ambas estimaciones son consistentes y esta propiedad **tampoco nos ayuda a elegir** entre la media y la mediana.
+
+### Eficiencia
+
+Una estimación es más **eficiente** que otra si su distribución muestral tiene menos varianza, es decir, si es más precisa con el mismo tamaño de muestra.
+
+```{r}
+var(medias20)
+var(medianas20)
 ```
 
 ```{r}
-hist(medianas_20, col = "lightblue", main = paste(var(medianas_20), var(medianas_100)))
-hist(medianas_100, col = "darkblue", add = T, main = "")
+var(medias100)
+var(medianas100)
 ```
 
-Al aumentar el tamaño de la muestra, ambas distribuciones se estrechan considerablemente. Ambos estimadores son consistentes. **La consistencia tampoco nos ayuda a elegir.**
-
-### Tercera propiedad: eficiencia
-
-Un estimador es más **eficiente** que otro si su distribución muestral tiene menor varianza, es decir, si produce estimaciones más precisas con el mismo número de observaciones.
-
-```{r}
-var(medias_100)
-var(medianas_100)
-```
-
-La media tiene una varianza muestral menor. Esto significa que, en términos de precisión, **para obtener con la mediana la misma eficiencia que con la media**, se necesitarían más observaciones.
+La media tiene una varianza menor, tanto para $n=20$ como para $n=100$. Esto significa que, en términos de precisión, **para obtener con la mediana la misma eficiencia que con la media**, se necesitarían más observaciones.
 
 Pero esta ventaja no es incondicional. Depende de un supuesto sobre el comportamiento de los errores $\varepsilon_i$.
 
 ## Errores poblacionales con distribución normal
 
-La eficiencia relativa entre media y mediana depende de **cuál distribución tienen los errores**. Si asumimos que los errores $\varepsilon_i$ se distribuyen normalmente, entonces la media es el estimador insesgado con menor varianza posible.
+La eficiencia relativa entre media y mediana depende de **cuál distribución tienen los errores**. Si asumimos que los errores $\varepsilon_i$ se distribuyen normalmente, entonces la media es la estimación con menor varianza posible.
 
 ¿Por qué es razonable asumir normalidad? Hay tres razones:
 
@@ -177,7 +173,7 @@ La eficiencia relativa entre media y mediana depende de **cuál distribución ti
 2.  Es posible transformar distribuciones no normales en distribuciones aproximadamente normales.
 3.  Existe un modelo teórico que justifica esperar normalidad: el **teorema del límite central**.
 
-### Teorema del Límite Central (TLC): por qué los errores tienden a ser normales
+## Teorema del Límite Central (TLC)
 
 El error observado $\varepsilon_i$ rara vez se debe a una sola variable. Múltiples variables independientes contribuyen al error. El **teorema del límite central** establece que la distribución de la suma de un número grande de variables independientes se aproxima a una distribución normal, sin importar la distribución original de cada variable individual.
 
@@ -186,8 +182,6 @@ El error observado $\varepsilon_i$ rara vez se debe a una sola variable. Múltip
 Supongamos que cada variable que genera error sigue una distribución uniforme entre $-0.5$ y $+0.5$, muy diferente de una normal:
 
 ```{r}
-set.seed(42)
-
 valores_1  <- runif(10000, min = -0.5, max = 0.5)
 valores_2  <- replicate(10000, sum(runif(2, -0.5, 0.5)))
 valores_6  <- replicate(10000, sum(runif(6, -0.5, 0.5)))
@@ -195,10 +189,10 @@ valores_12 <- replicate(10000, sum(runif(12, -0.5, 0.5)))
 ```
 
 ```{r}
-hist(valores_12)
-hist(valores_6)
-hist(valores_2)
-hist(valores_1)
+ggplot() + geom_histogram(aes(valores_1), bins = 30) +
+ggplot() + geom_histogram(aes(valores_2), bins = 30) +
+ggplot() + geom_histogram(aes(valores_6), bins = 30) +
+ggplot() + geom_histogram(aes(valores_12), bins = 30)
 ```
 
 Aunque ninguna variable individual es normal, la distribución de la suma de sus valores se aproxima rápidamente a una distribución normal. Si es razonable suponer que el error observado es la suma de muchas variables aleatorias, entonces es razonable suponer que los errores tienen una distribución aproximadamente normal.
@@ -208,12 +202,12 @@ Aunque ninguna variable individual es normal, la distribución de la suma de sus
 El TLC entonces garantiza que, aun cuando la distribución original no sea normal, la distribución muestral de su media tiende a la normalidad conforme crece $n$:
 
 ```{r}
-qqnorm(Yi_pob)
-qqnorm(medias_20)
-qqnorm(medias_100)
+ggplot() + aes(sample = Yi) + geom_qq() + geom_qq_line()
+ggplot() + aes(sample = medias20) + geom_qq() + geom_qq_line()
+ggplot() + aes(sample = medias100) + geom_qq() + geom_qq_line()
 ```
 
-## La distribución normal: especificación formal
+## La distribución normal
 
 La curva de la distribución normal está dada por:
 
@@ -224,24 +218,20 @@ $$
 Esta ecuación tiene dos parámetros: $\mu$ (la media) y $\sigma^2$ (la varianza). Distintos valores de $\mu$ desplazan la curva; distintos valores de $\sigma^2$ controlan su dispersión.
 
 ```{r}
-curve(dnorm(x, mean = 0, sd = 1), from = -5, to = 8, lwd = 2, col = "steelblue",
-      ylab = "f(x)", main = "Distribuciones normales con igual varianza y distinta media")
-curve(dnorm(x, mean = 3, sd = 1), add = TRUE, lwd = 2, col = "darkorange")
-legend("topright", legend = c("μ = 0, σ² = 1", "μ = 3, σ² = 1"),
-       col = c("steelblue", "darkorange"), lwd = 2)
+ggplot() +
+  xlim(-4, 4) +
+  geom_function(fun = dnorm, args = list(mean = -1, sd = 1), color = "red") +
+  geom_function(fun = dnorm, args = list(mean = 1, sd = 1), color = "blue")
 ```
 
 ```{r}
-curve(dnorm(x, mean = 0, sd = sqrt(0.25)), from = -6, to = 6, lwd = 2, col = "steelblue",
-      ylab = "f(x)", main = "Distribuciones normales con igual media y distinta varianza",
-      ylim = c(0, 0.85))
-curve(dnorm(x, mean = 0, sd = 1), add = TRUE, lwd = 2, col = "darkorange")
-curve(dnorm(x, mean = 0, sd = 2), add = TRUE, lwd = 2, col = "darkred")
-legend("topright", legend = c("σ² = 0.25", "σ² = 1", "σ² = 4"),
-       col = c("steelblue", "darkorange", "darkred"), lwd = 2)
+ggplot() +
+  xlim(-4, 4) +
+  geom_function(fun = dnorm, args = list(mean = 0, sd = 0.5), color = "red") +
+  geom_function(fun = dnorm, args = list(mean = 0, sd = 1.5), color = "blue")
 ```
 
-### La distribución normal estándar y las puntuaciones $z$
+### Puntuaciones z
 
 Todas las distribuciones normales tienen la misma forma, por lo que es conveniente usar como referencia la distribución con $\mu = 0$ y $\sigma^2 = 1$. Para cualquier observación $Y$ de una distribución normal, la **puntuación z** expresa su distancia a la media en unidades de desviación estándar:
 
@@ -256,64 +246,60 @@ Propiedades clave:
 -   Aproximadamente el **99.7%** de las observaciones caen entre $z = -3$ y $z = +3$.
 
 ```{r}
-curve(dnorm(x), from = -4, to = 4, lwd = 2, col = "black",
-      ylab = "f(x)", main = "Distribución normal estándar (μ = 0, σ² = 1)")
-
-# 68% region (±1σ)
-x_seq <- seq(-1, 1, length.out = 200)
-polygon(c(-1, x_seq, 1), c(0, dnorm(x_seq), 0), col = rgb(0.26, 0.53, 0.96, 0.3), border = NA)
-
-# 95% regions (±2σ, excluding ±1σ)
-x_seq2 <- seq(-2, -1, length.out = 100)
-polygon(c(-2, x_seq2, -1), c(0, dnorm(x_seq2), 0), col = rgb(1, 0.65, 0, 0.3), border = NA)
-x_seq3 <- seq(1, 2, length.out = 100)
-polygon(c(1, x_seq3, 2), c(0, dnorm(x_seq3), 0), col = rgb(1, 0.65, 0, 0.3), border = NA)
-
-# 99.7% regions (±3σ, excluding ±2σ)
-x_seq4 <- seq(-3, -2, length.out = 100)
-polygon(c(-3, x_seq4, -2), c(0, dnorm(x_seq4), 0), col = rgb(0.8, 0.8, 0.8, 0.2), border = NA)
-x_seq5 <- seq(2, 3, length.out = 100)
-polygon(c(2, x_seq5, 3), c(0, dnorm(x_seq5), 0), col = rgb(0.8, 0.8, 0.8, 0.2), border = NA)
-
-# Labels
-text(0, 0.15, "68%", cex = 1.2, font = 2)
-text(-1.5, 0.04, "13.5%", cex = 0.9)
-text(1.5, 0.04, "13.5%", cex = 0.9)
-text(-2.5, 0.01, "2.35%", cex = 0.8)
-text(2.5, 0.01, "2.35%", cex = 0.8)
+x <- seq(-4, 4, 0.01)
 ```
-
-### Ejemplo: puntuaciones z de extraversión
 
 ```{r}
-z_ext <- (Yi_pob - beta_0) / sigma_pob
+y = dnorm(x)
 
-hist(z_ext, breaks = 30, probability = TRUE,
-     main = "Puntuaciones z de extraversión (población)",
-     xlab = "z", col = "steelblue", border = "white")
-curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+ggplot() +
+  geom_area(aes(x, y), alpha = 0.3) +
+  geom_area(aes(x[x >= -2 & x <= 2], y[x >= -2 & x <= 2]), alpha = 0.3) +
+  geom_area(aes(x[x >= -1 & x <= 1], y[x >= -1 & x <= 1]), alpha = 0.3) +
+  scale_x_continuous(breaks = -3:3) +
+  theme_classic()
 ```
+
+```{r}
+y = pnorm(x)
+
+ggplot() +
+  geom_area(aes(x, y), alpha = 0.3) +
+  geom_area(aes(x[x >= -2 & x <= 2], y[x >= -2 & x <= 2]), alpha = 0.3) +
+  geom_area(aes(x[x >= -1 & x <= 1], y[x >= -1 & x <= 1]), alpha = 0.3) +
+  scale_x_continuous(breaks = -3:3) +
+  theme_classic()
+```
+
+### Ejemplo
+
+Convertimos las puntuaciones de extraversión en puntuaciones z.
+
+```{r}
+z_ext <- (Yi - beta0) / RMSE
+```
+
+Comparamos las proporciones observadas de puntuaciones z con las probabilidades teóricas calculadas con base en una distribución normal.
 
 ```{r}
 mean(z_ext >= -1 & z_ext <= 1)
-mean(z_ext >= -2 & z_ext <= 2)
-mean(z_ext >= -3 & z_ext <= 3)
+integrate(dnorm, -1, 1)
+pnorm(1) - pnorm(-1)
 ```
 
-Para convertir una puntuación $z$ de vuelta a la escala original:
+Podemos convertir las puntuaciones $z$ de vuelta a la escala original.
 
 $$
 Y = \mu + z\sigma
 $$
 
 ```{r}
-Y_z15 <- beta_0 + 1.2 * sigma_pob
-pnorm(1)
+Yi_transformadas <- beta0 + z_ext * RMSE
 ```
 
-## Consecuencia formal: por qué la media es más eficiente bajo normalidad
+## ¿Por qué la media es más eficiente bajo normalidad?
 
-Si los errores $\varepsilon_i$ se distribuyen normalmente con media $0$ y varianza $\sigma^2$, los datos $Y_i$ también son normales con media $\beta_0$ y varianza $\sigma^2$. En ese caso, la varianza de la distribución muestral de cada estimador es:
+Si los errores $\varepsilon_i$ se distribuyen normalmente con media $0$ y varianza $\sigma^2$, los datos $Y_i$ también serán normales con media $\beta_0$ y varianza $\sigma^2$. En ese caso, la **varianza de la distribución muestral** de cada estimador es:
 
 $$
 \sigma^2_{\bar{Y}} = \frac{\sigma^2}{n} \qquad \text{(media)}
@@ -323,87 +309,69 @@ $$
 \sigma^2_{\text{mediana}} \approx \frac{\pi \sigma^2}{2n} \qquad \text{(mediana)}
 $$
 
-La razón entre ambas es $\pi/2 \approx 1.57$. Dicho de otro modo, para alcanzar con la mediana la misma precisión que con la media en una muestra de $n = 100$, se necesitarían aproximadamente $n = 157$ observaciones. La simulación reproduce este resultado:
+La razón entre ambas es $\pi/2 \approx 1.57$. Dicho de otro modo, para alcanzar con la mediana la misma precisión que con la media en una muestra de $n = 100$, se necesitarían aproximadamente $n = 157$ observaciones. La teoría predice que la varianza de la mediana es aproximadamente π/2 veces la de la media; la simulación muestra la misma tendencia.
 
 ```{r}
-cat("Varianza teórica de la media (σ²/n, n=20):", round(sigma2_pob / 20, 4), "\n")
-cat("Varianza observada de la media (n=20):", round(var(medias_20), 4), "\n")
-cat("\n")
-cat("Varianza teórica de la mediana (πσ²/2n, n=20):", round(pi * sigma2_pob / (2 * 20), 4), "\n")
-cat("Varianza observada de la mediana (n=20):", round(var(medianas_20), 4), "\n")
+n <- 20
+(pi * MSE / (2 * n)) / (MSE / n)
 ```
 
 Se puede verificar también con $n = 100$:
 
 ```{r}
-cat("Varianza poblacional σ²:", round(sigma2_pob, 4), "\n")
-cat("Varianza teórica de la media (σ²/n, n=100):", round(sigma2_pob / 100, 4), "\n")
-cat("Varianza observada de la media (n=100):", round(var(medias_100), 4), "\n")
+n <- 100
+(pi * MSE / (2 * n)) / (MSE / n)
 ```
 
 ## Un resumen
 
-**Si la distribución de los errores es normal, la media es el estimador insesgado con menor varianza posible**. Ningún otro estimador insesgado puede ser más eficiente.
+**Si la distribución de los errores es normal, la media es la estimación con menor varianza posible**.
 
-Por lo tanto, elegimos la media como el mejor estimador de $\beta_0$ y adoptamos su correspondiente índice de error: la **suma de errores cuadráticos (SSE)**. En la clase anterior se demostró algebraicamente que la media es el valor que minimiza la SSE para cualquier conjunto de datos; el resultado de esta clase añade la razón por la que ese criterio es el apropiado: bajo normalidad, minimizar la SSE equivale a usar el estimador óptimo.
+Por lo tanto, elegimos la media como el mejor estimador de $\beta_0$ y adoptamos su correspondiente índice de error: la **suma de errores cuadráticos (SSE)** y por ende la **media de errores cuadráticos (MSE)**.
 
-Existen razones adicionales —de orden matemático y computacional— para preferir la SSE sobre la SAE:
+Existen razones adicionales —de orden matemático y computacional— para preferir la SSE/MSE sobre la SAE/MAD:
 
 -   Es mucho más fácil trabajar con cuadrados que con valores absolutos en demostraciones matemáticas.
--   Para modelos con múltiples parámetros, la SSE produce fórmulas simples para los estimadores; otros índices requieren algoritmos iterativos.
--   Los estimadores basados en la SAE no siempre son únicos; con la SSE siempre existe una solución única.
+-   Para modelos con múltiples parámetros, SSE/MSE produce fórmulas simples para las estimaciones; otros índices requieren algoritmos iterativos.
+-   Las estimaciones basads en la SAE/MAD no siempre son únicos; con SSE/MSE siempre existe una solución única.
 
 ## ¿Y si los errores no son normales?
 
-La conclusión anterior depende fuertemente del supuesto de normalidad. Si los errores tienen otra distribución, la media y la SSE podrían no ser las mejores opciones.
+La conclusión anterior depende en gran medida del supuesto de normalidad. Si los errores tienen otra distribución, la media y la SSE/MSE podrían no ser las mejores opciones.
 
 ### Distribuciones asimétricas
 
 Cuando los errores tienen una distribución asimétrica, los errores grandes son más probables en una dirección que en la otra. Esto ocurre, por ejemplo, en datos de tiempos de reacción: hay un piso pero no un techo.
 
 ```{r}
-set.seed(42)
 
-errores_sesgados <- rexp(10000, rate = 0.5) - 2
-
-hist(errores_sesgados, breaks = 50, probability = TRUE,
-     main = "Ejemplo de distribución asimétrica de errores",
-     xlab = "Error", col = "steelblue", border = "white")
+ggplot() +
+  geom_histogram(aes(x = rlnorm(10000)), bins = 70)
 ```
 
 ### Distribuciones con colas gruesas
 
-Otra distribución problemática tiene la forma general de la normal pero con colas más pesadas: los errores extremos son más frecuentes de lo esperado. Estos valores atípicos afectan seriamente a la media (y por ende a la SSE, que pondera los errores al cuadrado), mientras que la mediana es más resistente.
+Otra distribución problemática es aquella con una forma similar a la de la normal pero con colas más gruesas/pesadas: los errores extremos son más frecuentes de lo esperado. Estos valores atípicos afectan seriamente a la media (y por ende a la SSE/MSE, que pondera los errores al cuadrado), mientras que la mediana es más resistente.
 
 ```{r}
-set.seed(42)
-
-errores_normales <- rnorm(10000)
-errores_colas    <- rt(10000, df = 3)
-
-plot(density(errores_normales),
-     main = "Normal vs. colas gruesas (t con 3 gl)",
-     xlab = "Error", lwd = 2, col = "steelblue",
-     xlim = c(-6, 6), ylim = c(0, 0.45))
-lines(density(errores_colas), lwd = 2, col = "darkred", lty = 2)
-legend("topright",
-       legend = c("Normal", "Colas gruesas (t, df=3)"),
-       col = c("steelblue", "darkred"), lwd = 2, lty = c(1, 2))
+ggplot() +
+  geom_histogram(aes(x = rt(1000, df = 4)), bins = 60, fill = "red") +
+  geom_histogram(aes(x = rnorm(1000)), bins = 60, fill = "blue")
 ```
-
-La media y la SSE son óptimas bajo normalidad; en presencia de asimetría severa o colas muy pesadas, conviene considerar alternativas.
 
 ## Supuestos adicionales sobre los errores
 
 ### Independencia
 
-Cada error es independiente del valor de cualquier otro error. Conocer el error de una observación no permite predecir el error de otra.
+Se incumple este supuesto cuando las observaciones comparten una fuente común de varianza que el modelo no recoge.
 
-Se viola este supuesto cuando:
+Esto ocurre cuando
 
--   Se mide la misma unidad en múltiples ocasiones (series temporales).
--   Se tienen medidas repetidas dentro de un mismo sujeto (diseños intra-sujeto).
--   Los datos provienen de unidades agrupadas (parejas, familias, grupos).
+1.  la misma unidad es medida en múltiples ocasiones o condiciones (datos longitudinales, medidas repetidas, diseños intra-sujeto) y
+
+2.  unidades diferentes pertenecen a un grupo común (parejas, familias, aulas, etc).
+
+En ambos casos, conocer el error de una observación informa sobre el error de otras que comparten esa fuente.
 
 ### Distribución idéntica (homocedasticidad)
 
@@ -424,14 +392,16 @@ $$
 
 ## Resumen general
 
-La clase anterior estableció que la media minimiza la SSE y la mediana minimiza la SAE, pero no respondió cuál criterio es preferible. **¿Por qué usamos la media y la SSE en lugar de la mediana y la SAE?** La respuesta se construyó en cuatro pasos:
+La clase anterior estableció que la media minimiza SSE/MSE y la mediana minimiza SAE/MAD, pero no respondió cuál criterio es preferible. **¿Por qué usamos media y SSE/MSE en lugar de mediana y SAE/MAD?**
 
-1.  **Distribuciones muestrales**: para comparar estimadores no basta evaluar su comportamiento en una muestra concreta; es necesario examinar su distribución a lo largo de todas las muestras posibles.
+La respuesta se construyó en cuatro pasos:
 
-2.  **Insesgadez y consistencia**: tanto la media como la mediana cumplen ambas propiedades. El empate en estas dos propiedades no ofrece base para elegir.
+1.  **Distribuciones muestrales**: para comparar estimadores no basta evaluar su comportamiento en una muestra concreta, es necesario examinar su distribución a lo largo de todas las muestras posibles.
 
-3.  **Eficiencia**: la media tiene menor varianza muestral que la mediana. Bajo normalidad, la razón entre las varianzas es $\pi/2 \approx 1.57$ a favor de la media.
+2.  **Sesgo y consistencia**: tanto la media como la mediana son consistente y no muestran sesgo. El empate en estas dos propiedades no ofrece base para elegir.
 
-4.  **Normalidad**: el supuesto de que $\varepsilon_i \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2)$ es razonable por evidencia empírica y por el teorema del límite central. Bajo este supuesto, la media es el estimador insesgado más eficiente posible. Si los errores son asimétricos o tienen colas muy pesadas, esta conclusión no se sostiene.
+3.  **Eficiencia**: la media tiene menor varianza muestral que la mediana. Cuando se cumple el supuesto de normalidad, la razón entre las varianzas es $\pi/2 \approx 1.57$ a favor de la media.
+
+4.  **Normalidad**: el supuesto de que $\varepsilon_i \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2)$ es razonable por evidencia empírica y por el teorema del límite central. Bajo este supuesto, la media es la estimación no sesgada más eficiente posible. Si los errores son asimétricos o tienen colas muy pesadas, esta conclusión no se sostiene.
 
 Además de la normalidad, los errores deben ser **independientes** **e** **idénticamente distribuidos** **con** **media cero**: $\varepsilon_i \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2)$.
