@@ -58,23 +58,29 @@ Vamos a tratar una muestra **como si fuera una población**, de modo que conozca
 Utilizaremos datos del Inventario de Personalidad Big Five aplicado en Costa Rica. El dataframe `big5CR` contiene 598 personas que respondieron 10 ítems de extraversión (EXT1 a EXT10) en una escala de 1 a 5.
 
 ```{r}
-
+big5CR <- big5CR |> 
+  select(EXT1:EXT10) |> 
+  mutate(extraversion = rowMeans(across(everything())))
 ```
 
 Al tratar estos datos como población, $\beta_0$ y $\sigma^2$ son parámetros conocidos, y los errores $\varepsilon_i = Y_i - \beta_0$ son los errores verdaderos, no residuos muestrales $e_i$. En la práctica nunca conocemos $\beta_0$, pero este artificio nos permite evaluar qué tan bien distintas estimaciones muestrales recuperan el parámetro poblacional.
 
 ```{r}
-
+Yi <- big5CR$extraversion
+beta0 <- mean(Yi)
+MSE <- mean((Yi - beta0)^2) # varianza
+RMSE <- sqrt(MSE)           # desviación estándar
 ```
 
 El error de cada persona en este modelo es la diferencia entre su puntuación observada y el parámetro verdadero:
 
 ```{r}
-
+epsilon <- Yi - beta0
 ```
 
 ```{r}
-
+ggplot() +
+  geom_histogram(aes(x = epsilon), bins = 35, fill = "lightblue")
 ```
 
 ## Distribuciones muestrales
@@ -86,13 +92,14 @@ Si pudiéramos extraer muchas muestras del mismo tamaño y con cada una estimár
 ### Simulación
 
 ```{r}
-
+medias20 <- replicate(10000, mean(sample(Yi, size = 20, replace = TRUE)))
+medianas20 <- replicate(10000, median(sample(Yi, size = 20, replace = TRUE)))
 ```
 
 ```{r}
 ggplot() +
-  geom_histogram(aes(x = ???), bins = 30, fill = "lightblue") +
-  geom_histogram(aes(x = ???), bins = 30, fill = "darkblue") +
+  geom_histogram(aes(x = medias20), bins = 30, fill = "lightblue") +
+  geom_histogram(aes(x = medianas20), bins = 30, fill = "darkblue") +
   labs(x = "")
 ```
 
@@ -105,7 +112,9 @@ A simple vista, ambas distribuciones están centradas alrededor de $\beta_0$, pe
 Las estimaciones sin sesgo son aquellas con una distribución muestral cuyo centro es igual al parámetro poblacional. Es decir, si en promedio no sobreestima ni subestima $\beta_0$.
 
 ```{r}
-
+beta0
+mean(medias20)
+mean(medianas20)
 ```
 
 Ambas estimaciones son insesgadas porque sus promedios son aproximadamente iguales a $\beta_0$. Por lo tando, la aunsencia de sesgo no nos permite decidir entre la media y la mediana.
@@ -115,18 +124,22 @@ Ambas estimaciones son insesgadas porque sus promedios son aproximadamente igual
 Una estimación es **consistente** si su distribución muestral se vuelve más estrecha/angosta conforme aumenta el tamaño de la muestra.
 
 ```{r}
-
+medias100 <- replicate(10000, mean(sample(Yi, size = 100, replace = TRUE)))
+medianas100 <- replicate(10000, median(sample(Yi, size = 100, replace = TRUE)))
 ```
 
 ```{r}
 ggplot() +
-  geom_histogram(aes(x = ???), bins = 30, fill = "lightblue") +
-  geom_histogram(aes(x = ???), bins = 30, fill = "darkblue") +
+  geom_histogram(aes(x = medias20), bins = 20, fill = "lightblue") +
+  geom_histogram(aes(x = medias100), bins = 20, fill = "darkblue") +
   labs(x = "Medias")
 ```
 
 ```{r}
-
+ggplot() +
+  geom_histogram(aes(x = medianas20), bins = 20, fill = "lightblue") +
+  geom_histogram(aes(x = medianas100), bins = 20, fill = "darkblue") +
+  labs(x = "Medianas")
 ```
 
 Al aumentar el tamaño de la muestra, ambas distribuciones muestrales se estrechan, de modo que ambas estimaciones son consistentes y esta propiedad **tampoco nos ayuda a elegir** entre la media y la mediana.
@@ -136,11 +149,13 @@ Al aumentar el tamaño de la muestra, ambas distribuciones muestrales se estrech
 Una estimación es más **eficiente** que otra si su distribución muestral tiene menos varianza, es decir, si es más precisa con el mismo tamaño de muestra.
 
 ```{r}
-
+var(medias20)
+var(medianas20)
 ```
 
 ```{r}
-
+var(medias100)
+var(medianas100)
 ```
 
 La media tiene una varianza menor, tanto para $n=20$ como para $n=100$. Esto significa que, en términos de precisión, **para obtener con la mediana la misma eficiencia que con la media**, se necesitarían más observaciones.
@@ -328,7 +343,8 @@ La conclusión anterior depende en gran medida del supuesto de normalidad. Si lo
 Cuando los errores tienen una distribución asimétrica, los errores grandes son más probables en una dirección que en la otra. Esto ocurre, por ejemplo, en datos de tiempos de reacción: hay un piso pero no un techo.
 
 ```{r}
-
+ggplot() +
+  geom_histogram(aes(x = rlnorm(10000)), bins = 70)
 ```
 
 ### Distribuciones con colas gruesas
@@ -336,7 +352,8 @@ Cuando los errores tienen una distribución asimétrica, los errores grandes son
 Otra distribución problemática es aquella con una forma similar a la de la normal pero con colas más gruesas/pesadas: los errores extremos son más frecuentes de lo esperado. Estos valores atípicos afectan seriamente a la media (y por ende a la SSE/MSE, que pondera los errores al cuadrado), mientras que la mediana es más resistente.
 
 ```{r}
-
+ggplot() +
+  geom_histogram(aes(x = rt(10000, df = 4)), bins = 70)
 ```
 
 ## Supuestos adicionales sobre los errores
