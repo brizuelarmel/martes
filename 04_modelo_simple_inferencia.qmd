@@ -50,7 +50,15 @@ Un grupo de 776 estudiantes de Medicina contestaron el [GAD-7](https://doi.org/1
 Con estos datos podríamos preguntarnos si la ansiedad promedio de las personas participantes es diferente al umbral de 10.
 
 ```{r}
+Yi <- gad7 |>
+  mutate(total = rowSums(across(gad1:gad7))) |>
+  pull(total)
 
+n <- length(Yi)
+
+C <- 10
+
+M <- sum(Yi) * 1/n
 ```
 
 # Modelos en competencia
@@ -78,7 +86,11 @@ El Modelo C predice siempre $\hat{Y}_{iC} = 10$ para cada observación:
 $$\text{SSE(C)} = \sum_{i=1}^{n}(Y_i - B_0)^2 = \sum_{i=1}^{n}(Y_i - 10)^2$$
 
 ```{r}
+MODELOC <- lm(Yi ~ 0 + offset(rep(C, n)))
 
+SSEC <- anova(MODELOC)$`Sum Sq`
+
+PC <- length(coef(MODELOC))
 ```
 
 # SSE del Modelo A
@@ -88,24 +100,29 @@ El Modelo A predice $\hat{Y}_{iA} = \bar{Y}$ para cada observación. Como se ha 
 $$\text{SSE(A)} = \sum_{i=1}^{n}(Y_i - \bar{Y})^2$$
 
 ```{r}
+MODELOA <- lm(Yi ~ 1)
 
+SSEA <- anova(MODELOA)$`Sum Sq`
+
+PA <- length(coef(MODELOA))
 ```
 
 # La reducción en error
 
 La diferencia entre ambos SSE cuantifica el beneficio de utilizar el modelo A en lugar del modelo C en términos de la reducción del error:
 
-$$\text{RSS} = \text{SSE(C)} - \text{SSE(A)}$$
+$$\text{SSR} = \text{SSE(C)} - \text{SSE(A)}$$
 
 Esta es la **suma de cuadrados reducida**: el error que eliminamos al pasar del Modelo C al Modelo A.
 
 ```{r}
-
+SSR <- SSEC - SSEA
+SSR <- sum(replicate(n, (C - M)^2))
 ```
 
 # Tabla de análisis de la varianza (ANOVA)
 
-Dado que $\text{RSS} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \text{SSE(A)} = \text{SSE(C)}$. Es decir, el error del modelo C tiene dos componentes:
+Dado que $\text{SSR} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \text{SSE(A)} = \text{SSE(C)}$. Es decir, el error del modelo C tiene dos componentes:
 
 -   El que se elimina al utilizar el modelo A ($\text{RSS}$), el "explicado" por el modelo A.
 
@@ -121,13 +138,12 @@ Dado que $\text{RSS} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \t
 -   **PC** = número de parámetros del Modelo C = 0 (ningún parámetro estimado)
 
 ```{r}
-
+tabla_anova <- anova(MODELOC, MODELOA)
 ```
 
 ```{r}
-c("n - P", "SSE", "PA - PC", "SSR", "F", "p")
-c("C", "A")
-
+colnames(tabla_anova) <- c("n - P", "SSE", "PA - PC", "SSR", "F", "p")
+rownames(tabla_anova) <- c("C", "A")
 ```
 
 # PRE
@@ -139,7 +155,7 @@ $$\text{PRE} = \frac{\text{SSE(C)} - \text{SSE(A)}}{\text{SSE(C)}} = \frac{\text
 El PRE oscila entre 0 y 1. Un PRE = 0 indica que el Modelo A no mejora en nada al Modelo C, mientras que un PRE = 1 indicaría que el Modelo A elimina todo el error.
 
 ```{r}
-
+PRE <- SSR / SSEC
 ```
 
 # El estadístico *F*
@@ -165,7 +181,7 @@ $$\frac{1 - \text{PRE}}{n - \text{PA}}$$
 Si $F \approx 1$, el Modelo A no reduce de manera importante el error que genera el modelo C, mientras que valores de *F* mucho mayores que 1 apuntan a que el Modelo A reduce el error... ***significativamente***.
 
 ```{r}
-
+F_estad <- (PRE / (PA - PC)) / ((1 - PRE) / (n - PA))
 ```
 
 Para que el Modelo A sea mejor que el Modelo C, la reducción del error por parámetro añadido debe ser sustancialmente mayor que la reducción esperada de añadir parámetro "inútiles" al azar.
@@ -183,7 +199,7 @@ Ahora que el PRE ha sido transformado en un estadístico de prueba F (cuya distr
 Esta pregunta nos obliga a comparar el valor observado de F con los valores que podría asumir si el PRE poblacional/verdadero ($\eta^2$) fuera muy cercano a 0, es decir, si F estuviera muy cercano a 1.
 
 ```{r}
-vc <- 1
+vc <- F_estad
 
 ggplot() +
   aes(x = rf(n = 10000, df1 = PA - PC, df2 = n - PA)) +
@@ -195,7 +211,8 @@ ggplot() +
 Cuando PRE = 0, la **distribución muestral** de F se centra aproximadamente en 1, de modo que valores de F mucho mayores que 1 son improbables cuando PRE se aleja mucho de 0.
 
 ```{r}
-
+p <- pf(F_estad, df1 = PA - PC, df2 = n - PA, lower.tail = F)
+format(p, scientific =  F)
 ```
 
 La probabilidad de observar una F igual o mayor a 346.62, **si se asume que PRE es igual a 0**, es menor a 0.05, lo cual se suele considerar como una probabilidad lo suficientemente pequeña como para rechazar que PRE sea igual a 0.
@@ -207,5 +224,10 @@ Al rechazar PRE = 0, también estamos rechazando el modelo C (hipótesis nula) p
 Dado que la diferencia entre los SSE de ambos modelos es estadísticamente significativa (PRE = 0.31, F(1, 768) = 346.62, p \< .001), se concluye que la puntuación media (M = 6.85) es significativamente diferente al umbral clínico de ansiedad moderada.
 
 ```{r}
-
+ggplot() +
+  aes(y = "", x = Yi) +
+  geom_point(position = position_jitter(width = 0, height = 0.05), alpha = 0.15) +
+  geom_point(aes(x = c(6.85, 10)), shape = c(17, 15), size = 3, color = "blue") +
+  labs(x = "Puntuación total") +
+  theme(axis.title.y = element_blank(), axis.ticks.y = element_blank())
 ```
