@@ -1,0 +1,211 @@
+---
+title: "04 Modelos simples: Inferencias sobre los parámetros"
+format: pdf
+author:
+  - Armel Brizuela Rodríguez
+language:
+  es:
+  title-block-author-single: "Autor"
+editor: visual
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, eval=FALSE}
+install.packages("remotes")
+```
+
+```{r, eval=FALSE}
+remotes::install_github("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_gitlab("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_bitbucket("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r}
+require(ggplot2)
+require(ps0046)
+require(dplyr)
+```
+
+$$\text{DATOS} = \text{MODELO} + \text{ERROR}$$
+
+$$Y_i = \beta_0 + \varepsilon_i$$
+
+La mejor forma de agregar el error de un modelo lineal es mediante la suma de errores al cuadrado (SSE), y el parámetro $\beta_0$ se estima óptimamente con la media muestral $b_0 = \bar{Y}$.
+
+El PRE nos permite utilizar el SSE para comparar dos modelos (modelo Compacto vs. modelo Aumentado).
+
+¿Cómo saber si la reducción del SSE al utilizar el modelo A en lugar del modelo C justifica la complejidad incrementada del Modelo A, es decir, justifica el sacrificio de la parsimonia del modelo C?
+
+# Ejemplo
+
+Un grupo de 776 estudiantes de Medicina contestaron el [GAD-7](https://doi.org/10.1186/1477-7525-8-8), un instrumento de *screening* que mide ansiedad generalizada en una escala de 0 a 21 (7 items, cada uno con opciones del 0 al 3). Una puntuación de **10** se considera el umbral de ansiedad moderada.
+
+Con estos datos podríamos preguntarnos si la ansiedad promedio de las personas participantes es diferente al umbral de 10.
+
+```{r}
+
+```
+
+# Modelos en competencia
+
+Transformamos la pregunta en un ejercicio de comparación de modelos lineales.
+
+**Modelo C (Compacto):** No estima ningún parámetro con base en los datos, simplemente predice una constante ($\beta_0 = 10$) para todas las observaciones:
+
+$$\text{Modelo C:} \quad Y_i = 10 + \varepsilon_i$$
+
+**Modelo A (Aumentado):** Estima un parámetro a partir de los datos, de modo que la mejor estimación es la media muestral $\beta_0 = \bar{Y}$.
+
+$$\text{Modelo A:} \quad Y_i = \beta_0 + \varepsilon_i$$
+
+El modelo C podría plantearse como una **hipótesis nula** ($\beta_0 = 10$) y el modelo A sería entonces una **hipótesis alternativa** ($\beta_0 \neq 10$).
+
+# Cuantificar el error de cada modelo
+
+El ajuste de un modelo a los datos se evalúa por su SSE: menor SSE significa mejor ajuste del modelo a los datos.
+
+# SSE del Modelo C
+
+El Modelo C predice siempre $\hat{Y}_{iC} = 10$ para cada observación:
+
+$$\text{SSE(C)} = \sum_{i=1}^{n}(Y_i - B_0)^2 = \sum_{i=1}^{n}(Y_i - 10)^2$$
+
+```{r}
+
+```
+
+# SSE del Modelo A
+
+El Modelo A predice $\hat{Y}_{iA} = \bar{Y}$ para cada observación. Como se ha indicado en clases anteriores, la media es la mejor estimación posible:
+
+$$\text{SSE(A)} = \sum_{i=1}^{n}(Y_i - \bar{Y})^2$$
+
+```{r}
+
+```
+
+# La reducción en error
+
+La diferencia entre ambos SSE cuantifica el beneficio de utilizar el modelo A en lugar del modelo C en términos de la reducción del error:
+
+$$\text{RSS} = \text{SSE(C)} - \text{SSE(A)}$$
+
+Esta es la **suma de cuadrados reducida**: el error que eliminamos al pasar del Modelo C al Modelo A.
+
+```{r}
+
+```
+
+# Tabla de análisis de la varianza (ANOVA)
+
+Dado que $\text{RSS} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \text{SSE(A)} = \text{SSE(C)}$. Es decir, el error del modelo C tiene dos componentes:
+
+-   El que se elimina al utilizar el modelo A ($\text{RSS}$), el "explicado" por el modelo A.
+
+-   El que no puede eliminarse ($\text{SSE(A)}$), el "no explicado" por el modelo A.
+
+| Fuente        |  SS  |   df    |
+|:--------------|:----:|:-------:|
+| Reducción (A) | SSR  | PA − PC |
+| Error (A)     | SSEA | n − PA  |
+| Total (C)     | SSEC | n − PC  |
+
+-   **PA** = número de parámetros del Modelo A = 1 ($\beta_0$ estimado)
+-   **PC** = número de parámetros del Modelo C = 0 (ningún parámetro estimado)
+
+```{r}
+
+```
+
+```{r}
+c("n - P", "SSE", "PA - PC", "SSR", "F", "p")
+c("C", "A")
+
+```
+
+# PRE
+
+El PRE (*Proportional Reduction Error*) expresa qué fracción del error del Modelo C fue eliminada por el Modelo A:
+
+$$\text{PRE} = \frac{\text{SSE(C)} - \text{SSE(A)}}{\text{SSE(C)}} = \frac{\text{SSR}}{\text{SSE(C)}}$$
+
+El PRE oscila entre 0 y 1. Un PRE = 0 indica que el Modelo A no mejora en nada al Modelo C, mientras que un PRE = 1 indicaría que el Modelo A elimina todo el error.
+
+```{r}
+
+```
+
+# El estadístico *F*
+
+El PRE no considera dos aspectos importantes:
+
+1.  ¿Cuántos parámetros adicionales se necesitaron para lograr esa reducción? Un mismo PRE es más impresionante si se obtiene con pocos parámetros que si se obtiene con muchos parámetros.
+
+2.  ¿Cuántos parámetros se podrían añadir para reducir el error restante? Con $n$ observaciones en total, podrían añadirse hasta $n - P_A$ parámetros adicionales que reducirían aún más el error.
+
+El estadístico *F* es una **fracción/cociente/razón/ratio** que incorpora los aspectos omitidos por el PRE:
+
+$$F = \frac{\text{PRE} / (\text{PA} - \text{PC})}{(1 - \text{PRE}) / (n - \text{PA})} = \text{PRE} \times \frac{n - \text{PA}}{(1 - \text{PRE})(\text{PA} - \text{PC})}$$
+
+-   **Numerador:** reducción del PRE por parámetro añadido
+
+$$\frac{\text{PRE}}{\text{PA} - \text{PC}}$$
+
+-   **Denominador:** reducción del PRE que *podría* obtenerse añadiendo todos los parámetros restantes posibles
+
+$$\frac{1 - \text{PRE}}{n - \text{PA}}$$
+
+Si $F \approx 1$, el Modelo A no reduce de manera importante el error que genera el modelo C, mientras que valores de *F* mucho mayores que 1 apuntan a que el Modelo A reduce el error... ***significativamente***.
+
+```{r}
+
+```
+
+Para que el Modelo A sea mejor que el Modelo C, la reducción del error por parámetro añadido debe ser sustancialmente mayor que la reducción esperada de añadir parámetro "inútiles" al azar.
+
+En el presente ejemplo, el numerador es $\frac{0.31}{1} = 0.31$ (un 31% de reducción del error por parámetro añadido), mientras que el denominador es $\frac{1 - 0.31}{769 - 1} = 0.000897$ (menos del 0.1% de reducción adicional posible por parámetro).
+
+La razón entre ambas cantidades —el estadístico $F = 346.62$— indica que el Modelo A reduce el error unas 346 veces más de lo que cabría esperar de un parámetro añadido al azar. En otras palabras, estimar $\beta_0$ a partir de la media muestral justifica sobradamente la complejidad adicional del Modelo A.
+
+Con esto disponemos de una regla para resolver la tensión inherente en el análisis de datos entre reducir el error lo más posible incrementando la complejidad del modelo y a la vez mantener el modelo tan parsimonioso como sea posible.
+
+# Decisión
+
+Ahora que el PRE ha sido transformado en un estadístico de prueba F (cuya distribución muestral es conocida), podemos preguntarnos si el F observado es lo suficientemente grande como para rechazar el modelo C.
+
+Esta pregunta nos obliga a comparar el valor observado de F con los valores que podría asumir si el PRE poblacional/verdadero ($\eta^2$) fuera muy cercano a 0, es decir, si F estuviera muy cercano a 1.
+
+```{r}
+vc <- 1
+
+ggplot() +
+  aes(x = rf(n = 10000, df1 = PA - PC, df2 = n - PA)) +
+  geom_density() +
+  geom_vline(xintercept = vc, linetype = "dashed") +
+  labs(title = paste("p = ", format(pf(vc, df1 = PA - PC, df2 = n - PA, lower.tail = FALSE))))
+```
+
+Cuando PRE = 0, la **distribución muestral** de F se centra aproximadamente en 1, de modo que valores de F mucho mayores que 1 son improbables cuando PRE se aleja mucho de 0.
+
+```{r}
+
+```
+
+La probabilidad de observar una F igual o mayor a 346.62, **si se asume que PRE es igual a 0**, es menor a 0.05, lo cual se suele considerar como una probabilidad lo suficientemente pequeña como para rechazar que PRE sea igual a 0.
+
+Al rechazar PRE = 0, también estamos rechazando el modelo C (hipótesis nula) para quedarnos con el modelo A (hipótesis alternativa).
+
+# Conclusión
+
+Dado que la diferencia entre los SSE de ambos modelos es estadísticamente significativa (PRE = 0.31, F(1, 768) = 346.62, p \< .001), se concluye que la puntuación media (M = 6.85) es significativamente diferente al umbral clínico de ansiedad moderada.
+
+```{r}
+
+```
