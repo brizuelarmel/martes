@@ -1,6 +1,5 @@
 ---
 title: "04 Modelos simples: Inferencias sobre los parámetros"
-format: pdf
 author:
   - Armel Brizuela Rodríguez
 language:
@@ -124,9 +123,9 @@ SSR <- sum(replicate(n, (C - M)^2))
 
 Dado que $\text{SSR} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \text{SSE(A)} = \text{SSE(C)}$. Es decir, el error del modelo C tiene dos componentes:
 
--   El que se elimina al utilizar el modelo A ($\text{RSS}$), el "explicado" por el modelo A.
+- El que se elimina al utilizar el modelo A ($\text{RSS}$), el "explicado" por el modelo A.
 
--   El que no puede eliminarse ($\text{SSE(A)}$), el "no explicado" por el modelo A.
+- El que no puede eliminarse ($\text{SSE(A)}$), el "no explicado" por el modelo A.
 
 | Fuente        |  SS  |   df    |
 |:--------------|:----:|:-------:|
@@ -134,8 +133,8 @@ Dado que $\text{SSR} = \text{SSE(C)} - \text{SSE(A)}$, entonces $\text{RSS} + \t
 | Error (A)     | SSEA | n − PA  |
 | Total (C)     | SSEC | n − PC  |
 
--   **PA** = número de parámetros del Modelo A = 1 ($\beta_0$ estimado)
--   **PC** = número de parámetros del Modelo C = 0 (ningún parámetro estimado)
+- **PA** = número de parámetros del Modelo A = 1 ($\beta_0$ estimado)
+- **PC** = número de parámetros del Modelo C = 0 (ningún parámetro estimado)
 
 ```{r}
 tabla_anova <- anova(MODELOC, MODELOA)
@@ -170,11 +169,11 @@ El estadístico *F* es una **fracción/cociente/razón/ratio** que incorpora los
 
 $$F = \frac{\text{PRE} / (\text{PA} - \text{PC})}{(1 - \text{PRE}) / (n - \text{PA})} = \text{PRE} \times \frac{n - \text{PA}}{(1 - \text{PRE})(\text{PA} - \text{PC})}$$
 
--   **Numerador:** reducción del PRE por parámetro añadido
+- **Numerador:** reducción del PRE por parámetro añadido
 
 $$\frac{\text{PRE}}{\text{PA} - \text{PC}}$$
 
--   **Denominador:** reducción del PRE que *podría* obtenerse añadiendo todos los parámetros restantes posibles
+- **Denominador:** reducción del PRE que *podría* obtenerse añadiendo todos los parámetros restantes posibles
 
 $$\frac{1 - \text{PRE}}{n - \text{PA}}$$
 
