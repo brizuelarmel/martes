@@ -59,7 +59,7 @@ Al aplicar esta regla pueden ocurrir dos tipos de equivocaciones:
 2.  **Error tipo II**: El modelo C es **incorrecto** en la población pero obtenemos una $p \geq .05$ en nuestra muestra particular y **no** lo rechazamos. La probabilidad de cometer este error se denomina $\beta$.
 
 |   | $p < 0.05$ (rechazar C) | $p \geq 0.05$ (no rechazar C) |
-|:------------------------|:---------------------:|:-----------------------:|
+|:---|:--:|:--:|
 | Modelo C es correcto ($\eta^2 = 0$) | Error I ($\alpha$) | Decisión correcta |
 | Modelo C es incorrecto ($\eta^2 > 0$) | Decisión correcta | Error II ($\beta$) |
 
@@ -85,7 +85,7 @@ Yi <- gad7 |>
   pull(total)
 
 n <- length(Yi)
-C <- 10
+C <- 7.05
 M <- mean(Yi)
 
 MODELOC <- lm(Yi ~ 0 + offset(rep(C, n)))
@@ -115,7 +115,7 @@ p <- pf(F_estad, PA-PC, n - PA, lower.tail = F)
 La función `pwr.f2.test()` del paquete **pwr** opera directamente en los términos que ya usamos: $PA - PC$ (grados de libertad del numerador), $n - PA$ (grados de libertad del denominador) y el tamaño del efecto expresado como $f^2 = \eta^2 / (1 - \eta^2)$.
 
 ```{r}
-eta2_hip <- 
+eta2_hip <- 0.10 # PRE poblacional
 f2_hip   <- eta2_hip / (1 - eta2_hip)
 ```
 
@@ -124,19 +124,49 @@ La función requiere tres de los cuatro ingredientes ($f^2$, grados de libertad,
 Por ejemplo, ¿qué poder habríamos tenido con $n = 30$ y $\eta^2 = 0.10$?
 
 ```{r}
+n_hip <- 30
 
+pwr.f2.test(
+  u = PA - PC, # grados de libertad del numerador
+  v = n_hip - PA, # grados de libertad del denominador
+  f2 = f2_hip, # f cuadrado / tamaño de efecto
+  sig.level = 0.05, # alfa
+  power = NULL # 1 - beta
+)
 ```
 
 ¿Cuántos participantes se necesita para alcanzar un poder del 80% si asumimos que eta cuadrado es igual a 0.10?
 
 ```{r}
+resultado <- pwr.f2.test(
+  u = PA - PC, # grados de libertad del numerador
+  v = NULL, # grados de libertad del denominador
+  f2 = f2_hip, # f cuadrado / tamaño de efecto
+  sig.level = 0.05, # alfa
+  power = 0.80 # 1 - beta
+)
 
+ceiling(resultado$v) + PA
 ```
 
 ¿Cuánta muestra necesitaría si el modelo C tuviera 4 parámetros, el modelo A agregara 5 predictores y el eta cuadrado fuera de 0.20?
 
 ```{r}
+eta2_hip <- 0.20 # PRE poblacional
+f2_hip   <- eta2_hip / (1 - eta2_hip)
 
+PC_hip <- 4
+PA_hip <- 4 + 5
+
+resultado <- pwr.f2.test(
+  u = PA_hip - PC_hip, # grados de libertad del numerador
+  v = NULL, # grados de libertad del denominador
+  f2 = f2_hip, # f cuadrado / tamaño de efecto
+  sig.level = 0.05, # alfa
+  power = 0.80 # 1 - beta
+)
+
+ceiling(resultado$v) + PA_hip
 ```
 
 # ¿Qué tamaño del efecto usar?
@@ -152,7 +182,7 @@ Hay tres rutas para generarlo:
 **3. Diferencia mínima de interés práctico.** Se define la diferencia más pequeña que tendría consecuencias reales (clínicas, educativas, económicas) y se calcula el $\eta^2$ correspondiente.
 
 ```{r}
-dmip <- 
+dmip <- 3.1457
 
 eta2_dmip <- dmip^2 / (dmip^2 + var(Yi))
 f2_dmip   <- eta2_dmip / (1 - eta2_dmip)
@@ -243,7 +273,7 @@ candidatos[no_rechaza]
 Podemos verificar con la función `confint()`:
 
 ```{r}
-
+confint(MODELOA)
 ```
 
 El intervalo \[6.52, 7.19\] contiene exactamente todos los valores de $B_0$ que, al usarlos como hipótesis del modelo C, no serían rechazados ($p \geq .05$). Esto es equivalente a la conclusión de la clase anterior: como $B_0 = 10$ no está incluido en ese rango de valores, rechazamos el modelo C.
