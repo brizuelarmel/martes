@@ -44,24 +44,26 @@ La distinción es paralela a la que ya conocemos:
 | $b_0 = \bar{Y}$ | $\beta_0$ (media verdadera) |
 | PRE | $\eta^2$ (reducción proporcional del error verdadera) |
 
-Cuando el modelo C es correcto —cuando no hay ninguna diferencia real entre los dos modelos en la población— $\eta^2 = 0$. Cuando el modelo A es genuinamente mejor, $\eta^2 > 0$. El PRE calculado a partir de una muestra **en promedio sobreestima** $\eta^2$ porque el ajuste por mínimos cuadrados aprovecha inevitablemente el azar de la muestra particular.
+Cuando el modelo C es correcto —cuando no hay ninguna diferencia real entre los dos modelos en la población— $\eta^2 = 0$. Cuando el modelo A es genuinamente mejor, $\eta^2 > 0$.
 
 # Errores de decisión
 
-En la clase anterior establecimos una regla de decisión: si la probabilidad de observar una F igual o más extrema que la obtenida (asumiendo que los modelos C y A son equivalentes, es decir, $\eta^2 = 0$) es menor que 0.05, rechazamos el modelo C. Esa probabilidad es el valor $p$.
+En la clase anterior establecimos una regla de decisión con base en el valor $p$:
 
-La regla no es infalible: hay dos maneras de equivocarse.
+**Bajo el supuesto de que los modelos C y A son equivalentes** ($\eta^2 = 0$), si la probabilidad de observar una F igual o más extrema que la obtenida es muy pequeña ($p < 0.05$) rechazamos el modelo C.
 
-El **error tipo I** ocurre cuando el modelo C es correcto en la población pero obtenemos una $p < .05$ en nuestra muetras particular y lo rechazamos. La probabilidad de cometer este error es $\alpha$, que fijamos antes del análisis. Usar $\alpha = 0.05$ significa que estamos dispuestos a rechazar incorrectamente el modelo C en un 5% de los casos.
+Al aplicar esta regla pueden ocurrir dos tipos de equivocaciones:
 
-El **error tipo II** ocurre cuando el modelo C es incorrecto en la población (el modelo A es realmente mejor) pero obtenemos una $p \geq .05$ en nuestra muestra particular y no lo rechazamos. La probabilidad de cometer este error se denomina $\beta$.
+1.  **Error tipo I**: El modelo C es **correcto** en la población pero obtenemos una $p < 0.05$ en nuestra muetra particular y lo rechazamos. La probabilidad de cometer este error es $\alpha$, que fijamos antes del análisis. Usar $\alpha = 0.05$ significa que estamos dispuestos a rechazar incorrectamente el modelo C en un 5% de los casos.
+
+2.  **Error tipo II**: El modelo C es **incorrecto** en la población pero obtenemos una $p \geq .05$ en nuestra muestra particular y **no** lo rechazamos. La probabilidad de cometer este error se denomina $\beta$.
 
 |   | $p < 0.05$ (rechazar C) | $p \geq 0.05$ (no rechazar C) |
 |:------------------------|:---------------------:|:-----------------------:|
-| Modelo C es verdadero ($\eta^2 = 0$) | Error I ($\alpha$) | Decisión correcta |
+| Modelo C es correcto ($\eta^2 = 0$) | Error I ($\alpha$) | Decisión correcta |
 | Modelo C es incorrecto ($\eta^2 > 0$) | Decisión correcta | Error II ($\beta$) |
 
-Los errores tipo I y tipo II están vinculados: con un tamaño de muestra fijo, reducir uno tiende a aumentar el otro.
+Los errores tipo I y tipo II están vinculados: manteniendo constante el tamaño de muestra, reducir uno tiende a aumentar el otro.
 
 # Poder estadístico
 
@@ -69,9 +71,9 @@ El complemento del error tipo II es el **poder estadístico**:
 
 $$\text{Poder} = 1 - \beta$$
 
-El poder es la probabilidad de obtener $p < 0.05$ cuando el modelo C es incorrecto en la población. Si repitiéramos el estudio muchas veces con muestras aleatorias de la misma población, el poder indica en qué proporción de esas repeticiones obtendríamos $p < 0.05$.
+El poder es la probabilidad de obtener $p < 0.05$ cuando el modelo C es **incorrecto** en la población. Si repitiéramos el estudio muchas veces con muestras aleatorias de la misma población, el poder es la proporción de esas repeticiones en las que se obtendría una $p < 0.05$.
 
-El análisis de poder se realiza idealmente **antes de recolectar los datos**, y su objetivo práctico más común es responder: ¿cuántos participantes necesito para tener una probabilidad razonable de detectar un valor específico de $\eta^2$?
+El análisis de poder se realiza idealmente **antes** de recolectar los datos, y su objetivo práctico más común es averiguar cuántos participantes se necesitan para tener una probabilidad razonable de detectar un valor específico de $\eta^2$.
 
 # Ejemplo
 
@@ -94,11 +96,16 @@ PA <- coef(MODELOA) |> length()
 
 SSEC <- anova(MODELOC)$`Sum Sq`
 SSEA <- anova(MODELOA)$`Sum Sq`
-MSEA <- SSEA / (n - PA)
 SSR  <- SSEC - SSEA
 
 PRE <- SSR / SSEC
+```
 
+$$
+F = \frac{\frac{PRE}{PA - PC}}{\frac{1-PRE}{n-PA}}
+$$
+
+```{r}
 F_estad <- ((PRE)/(PA - PC))/((1 - PRE)/(n - PA))
 p <- pf(F_estad, PA-PC, n - PA, lower.tail = F)
 ```
@@ -108,10 +115,11 @@ p <- pf(F_estad, PA-PC, n - PA, lower.tail = F)
 La función `pwr.f2.test()` del paquete **pwr** opera directamente en los términos que ya usamos: $PA - PC$ (grados de libertad del numerador), $n - PA$ (grados de libertad del denominador) y el tamaño del efecto expresado como $f^2 = \eta^2 / (1 - \eta^2)$.
 
 ```{r}
-
+eta2_hip <- 
+f2_hip   <- eta2_hip / (1 - eta2_hip)
 ```
 
-La función requiere tres de los cuatro ingredientes —$f^2$, grados de libertad, $\alpha$ y $1-\beta$— y calcula el cuarto. El argumento que se deja en `NULL` es el que se quiere estimar.
+La función requiere tres de los cuatro ingredientes ($f^2$, grados de libertad, $\alpha$ y $1-\beta$) para calcular el restante. El argumento al que se le asigne `NULL` es el que se quiere estimar.
 
 Por ejemplo, ¿qué poder habríamos tenido con $n = 30$ y $\eta^2 = 0.10$?
 
@@ -119,7 +127,7 @@ Por ejemplo, ¿qué poder habríamos tenido con $n = 30$ y $\eta^2 = 0.10$?
 
 ```
 
-¿Cuántos participantes necesitamos para alcanzar un poder del 80% si asumimos que eta cuadrado es igual a 0.10?
+¿Cuántos participantes se necesita para alcanzar un poder del 80% si asumimos que eta cuadrado es igual a 0.10?
 
 ```{r}
 
@@ -139,27 +147,55 @@ Hay tres rutas para generarlo:
 
 **1. Convenciones de Cohen.** [Cohen](https://www.psychometrica.de/effect_size.html) propuso $\eta^2 = 0.01$ (pequeño), $\eta^2 = 0.06$ (mediano) y $\eta^2 = 0.14$ (grande). Son arbitrarios y el propio Cohen desaconsejaba usarlos si había otras alternativas.
 
-**2. Literatura previa o meta-análisis.** Se toma el tamaño del efecto reportado en estudios similares. Hay que tener en cuenta que los estudios publicados sobreestiman los efectos por sesgo de publicación; un meta-análisis atenúa este problema y además ofrece un rango de valores plausibles.
+**2. Literatura previa y meta-análisis.** Se toma el tamaño del efecto reportado en estudios similares. Hay que tener en cuenta que los estudios publicados sobreestiman los efectos por sesgo de publicación. Un meta-análisis atenúa este problema y además ofrece un rango de valores plausibles.
 
 **3. Diferencia mínima de interés práctico.** Se define la diferencia más pequeña que tendría consecuencias reales (clínicas, educativas, económicas) y se calcula el $\eta^2$ correspondiente.
 
+```{r}
+dmip <- 
+
+eta2_dmip <- dmip^2 / (dmip^2 + var(Yi))
+f2_dmip   <- eta2_dmip / (1 - eta2_dmip)
+
+resultado_dmip <- pwr.f2.test(
+  u         = PA - PC,
+  v         = NULL,
+  f2        = f2_dmip,
+  sig.level = 0.05,
+  power     = 0.80)
+
+ceiling(resultado_dmip$v) + PA
+```
+
 # Aplicación al ejemplo GAD-7
 
-El análisis de poder más útil en este caso es prospectivo: si quisiéramos **replicar** este estudio, ¿qué muestra necesitaríamos? Para eso usamos el tamaño del efecto observado, corregido por sesgo. El PRE calculado a partir de datos sobreestima η²; la estimación insesgada es:
+El análisis de poder más útil en este caso es prospectivo: si quisiéramos **replicar** este estudio, ¿qué tamaño de muestra necesitaríamos?
 
-$$\text{Estimación insesgada de } \eta^2 = 1 - (1 - \text{PRE}) \cdot \frac{n - PC}{n - PA}$$
+Para eso usamos el tamaño del efecto observado, corregido por sesgo. El PRE calculado a partir de datos sobreestima η², por lo que en el libro se propone esta corrección:
+
+$$\text{Estimación corregida de } \eta^2 = 1 - (1 - \text{PRE}) \cdot \frac{n - PC}{n - PA}$$
 
 ```{r}
-
+eta2_corregido <- 1 - (1 - PRE) * (n - PC) / (n - PA)
+eta2_corregido
 ```
 
 Con esa estimación como valor hipotético de η², calculamos la muestra necesaria:
 
 ```{r}
+f2_corregido <- eta2_corregido / (1 - eta2_corregido)
 
+resultado_gad <- pwr.f2.test(
+  u         = PA - PC,
+  v         = NULL,
+  f2        = f2_corregido,
+  sig.level = 0.05,
+  power     = 0.80)
+
+ceiling(resultado_gad$v) + PA
 ```
 
-El output indica que bastarían 19 participantes para alcanzar un poder del 80% si el efecto fuera de esta magnitud.
+El output indica que bastarían 19 participantes para alcanzar un poder del 80% si el eta cuadrado real fuera de 0.31.
 
 Este número ilustra un límite del análisis de poder: responde exclusivamente a la pregunta estadística de cuántos datos se necesitan para detectar un efecto dado, pero no garantiza representatividad ni validez externa. En la práctica, ningún estudio con modelos lineales y 19 participantes sería publicable ni permitiría generalizar a ninguna población real. El análisis de poder fija un mínimo estadístico, no un tamaño muestral suficiente para generar resultados útiles.
 
@@ -169,7 +205,7 @@ El poder es mayor en las siguientes circunstancias:
 
 **1. Tamaños de efectos grandes.**
 
-**2. Poco error.** El error se reduce mejorando la calidad de los datos (instrumentos confiables, instrucciones claras, mediciones precisas) o mejorando el modelo (añadiendo parámetros que "expliquen" mejor la variable de respuesta).
+**2. Poco error.** El error se reduce mejorando la calidad de los datos (puntuaciones confiables, instrucciones claras, reducción de sesgos) o mejorando el modelo (añadiendo parámetros que "expliquen" mejor la variable de respuesta).
 
 **3. Mayor** $\alpha$. Relajar el umbral de significancia (p. ej., de $0.05$ a $0.10$) aumenta el poder. En principio, podría justificarse cuando el costo de un error tipo I es bajo y no es factible mejorar el poder de otro modo.
 
@@ -177,16 +213,31 @@ El poder es mayor en las siguientes circunstancias:
 
 # Intervalos de confianza
 
-Un intervalo de confianza al $(1 - \alpha) \cdot 100\%$ para el parámetro $\beta_0$ es el conjunto de todos los valores que, si se usaran como $B_0$ en el modelo C, **no llevarían a rechazar el modelo C**.
-
-Para el modelo simple, el valor más pequeño y el más grande de dicho rango de valores se calculan directamente:
-
-$$b_0 \pm \sqrt{\frac{F_{\text{crit};\ 1,\ n-1;\ \alpha} \cdot \text{MSE(A)}}{n}}$$
-
-donde $\text{MSE(A)} = \text{SSE(A)}/(n - PA) = s^2$ y $b_0 = \bar{Y}$.
+Un intervalo de confianza para el parámetro $\beta_0$ es el conjunto de todos los valores que, si se usaran como $B_0$ en el modelo C, **no** llevarían a rechazar el modelo C.
 
 ```{r}
+candidatos <- seq(0, 21, by = 0.01)
 
+no_rechaza <- logical(length(candidatos))
+
+for (i in 1:length(candidatos)) {
+  
+  MODELOC <- lm(Yi ~ 0 + offset(rep(candidatos[i], n)))
+  
+  SSEC <- anova(MODELOC)$`Sum Sq`
+  
+  SSR  <- SSEC - SSEA
+  
+  PRE <- SSR / SSEC
+  
+  F_estad <- ((PRE)/(PA - PC))/((1 - PRE)/(n - PA))
+  
+  p <- pf(F_estad, PA - PC, n - PA, lower.tail = F)
+  
+  no_rechaza[i] <- p >= 0.05 
+}
+
+candidatos[no_rechaza]
 ```
 
 Podemos verificar con la función `confint()`:
@@ -220,7 +271,19 @@ $$f^2 = \frac{PRE}{1-PRE} = F \cdot \frac{PA-PC}{n-PA}$$
 Los grados de libertad aparecen entre paréntesis en la notación estándar de F —el primer número es $PA - PC$, el segundo es $n - PA$— así que no se necesita información adicional. Con $F(1,\, 148) = 6.82$:
 
 ```{r}
+F_obs  <- 6.82
+gl_num <- 1
+gl_den <- 148
 
+f2_lit <- F_obs * gl_num / gl_den
+
+pwr.f2.test(
+  u         = gl_num,
+  v         = gl_den,
+  f2        = f2_lit,
+  sig.level = 0.05,
+  power     = NULL
+)
 ```
 
 # Conclusión
