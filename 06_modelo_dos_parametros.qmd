@@ -62,11 +62,17 @@ Una pregunta interesante en psicología de la personalidad podría ser en qué m
 Utilizamos el dataframe `big5CR` para examinar esta relación en una muestra costarricense: ¿es la extraversión un predictor útil de la amabilidad?
 
 ```{r}
-
+datos <- big5CR |>
+  mutate(
+    extraversion = rowMeans(across(EXT1:EXT10)),
+    amabilidad = rowMeans(across(AGR1:AGR10))
+  )
 ```
 
 ```{r}
-
+ggplot(datos) +
+  aes(x = extraversion, y = amabilidad) +
+  geom_point()
 ```
 
 # Significado de los parámetros
@@ -80,7 +86,8 @@ Utilizamos el dataframe `big5CR` para examinar esta relación en una muestra cos
 Los mismos argumentos que llevaron a estimar $\beta_0$ con la media muestral (minimizar el SSE asumiendo errores normales) aplican aquí. La función `lm()` encuentra los valores de $b_0$ y $b_1$ que minimizan $SSE = \sum(Y_i - \hat{Y}_i)^2$.
 
 ```{r}
-
+MODELOA <- lm(amabilidad ~ 1 + extraversion, datos)
+coefA <- coef(MODELOA)
 ```
 
 -   $b_0 = 2.792333$: Cuando `extraversion` es igual a 0, el valor predicho de amabilidad es aproximadamente 2.8.
@@ -90,7 +97,10 @@ Los mismos argumentos que llevaron a estimar $\beta_0$ con la media muestral (mi
 El modelo lineal de dos parámetros define una línea recta que se aproxima lo más posible a todos los valores simultáneamente.
 
 ```{r}
-
+ggplot(datos) +
+  aes(x = extraversion, y = amabilidad) +
+  geom_point() +
+  geom_abline(intercept = coefA[1], slope = coefA[2])
 ```
 
 El error típico de predicción, es decir, la magnitud promedio de los residuos alrededor de la recta es:
@@ -100,7 +110,8 @@ RMSE = \sqrt{MSE} = \sqrt{\frac{SSE}{n-2}} = s
 $$
 
 ```{r}
-
+sigma(MODELOA)
+sd(residuals(MODELOA)) * sqrt(591/590)
 ```
 
 # Inferencia sobre la pendiente: ¿es útil el predictor?
@@ -111,15 +122,21 @@ La pregunta "¿la extraversión predice la amabilidad?" se traduce como: ¿la pe
 -   **Modelo A:** $Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i$
 
 ```{r}
-
+MODELOC <- lm(amabilidad ~ 1, datos)
+coefC <- coef(MODELOC)
+mean(datos$amabilidad)
 ```
 
 ```{r}
-
+ggplot(datos) +
+  aes(x = extraversion, y = amabilidad) +
+  geom_point() +
+  geom_abline(intercept = coefC[1], slope = 0)
 ```
 
 ```{r}
-
+tabla_anova <- anova(MODELOC, MODELOA)
+tabla_anova
 ```
 
 Dado que es poco probable ($p = 0.0000000000000002627$) observar una $F = 71.088$ si se asume que el modelo A genera el mismo error que el modelo C, rechazamos el modelo C y concluimos que $X_i$ reduce significativamente el error con respecto a simplemente utilizar la media de amabilidad.
@@ -137,7 +154,17 @@ $$
 El signo de $r$ coincide con el de la pendiente.
 
 ```{r}
+F_estad <- tabla_anova[2, "F"]
 
+n <- nrow(datos)
+
+PA <- length(coefA)
+
+PRE <- F_estad / (F_estad + n - PA)
+
+r <- sqrt(PRE)
+
+cor.test(datos$amabilidad, datos$extraversion)
 ```
 
 El PRE es entonces $r^2$ cuando se compara un modelo con un solo predictor contra un modelo sin predictores. Probar si $\beta_1 \neq 0$ equivale a probar si la correlación poblacional es distinta de cero.
@@ -147,7 +174,7 @@ El PRE es entonces $r^2$ cuando se compara un modelo con un solo predictor contr
 `confint()` devuelve el rango de valores de $\beta_1$ para los cuales no se rechazaría el modelo C.
 
 ```{r}
-
+confint(MODELOA)
 ```
 
 En el contexto del modelo de dos parámetros aparece un nuevo factor que afecta el ancho del intervalo: **la varianza del predictor**. Cuanto mayor sea la varianza de $X_i$, más angosto/preciso es el intervalo para $\beta_1$. En términos prácticos, muestrear ampliamente a lo largo del rango de valores posibles del predictor aumenta la precisión de la estimación.
@@ -157,7 +184,13 @@ En el contexto del modelo de dos parámetros aparece un nuevo factor que afecta 
 **Centrar** un predictor significa restarle su media: $X_i^* = X_i - \bar{X}$. La nueva variable centrada pasa a tener media igual a 0.
 
 ```{r}
+datos <- mutate(
+  datos,
+  extraversion_c = extraversion - mean(extraversion)
+)
 
+MODELOA_c <- lm(amabilidad ~ extraversion_c, datos)
+coefA_c <- coef(MODELOA_c)
 ```
 
 Dos consecuencias:
@@ -166,7 +199,10 @@ Dos consecuencias:
 2.  El **intercepto pasa a ser** $\bar{Y}$: la predicción cuando $X_i^* = 0$ equivale a la predicción cuando $X_i = \bar{X}$, y la recta siempre pasa por el punto $(\bar{X}, \bar{Y})$.
 
 ```{r}
-
+ggplot(datos) +
+  aes(x = extraversion_c, y = amabilidad) +
+  geom_point() +
+  geom_abline(intercept = coefA_c[1], slope = coefA_c[2])
 ```
 
 El SSE, el MSE y el valor $p$ de la pendiente son idénticos al modelo sin centrar. El centrado solo reubica el cero del eje $X$.
@@ -176,7 +212,14 @@ El SSE, el MSE y el valor $p$ de la pendiente son idénticos al modelo sin centr
 Con el modelo ajustado, podemos generar un intervalo de confianza para el **valor predicho** a cada nivel del predictor:
 
 ```{r}
+datos <- augment(MODELOA, interval = "confidence")
 
+ggplot(datos) +
+  aes(x = extraversion, y = amabilidad, ymin = .lower, ymax = .upper) +
+  geom_point() +
+  geom_abline(intercept = coefA[1], slope = coefA[2]) +
+  geom_ribbon(alpha = 0.7) +
+  theme_classic()
 ```
 
 El intervalo es **más angosto cerca de** $\bar{X}$ y se ensancha hacia los extremos del predictor. La intuición es la misma del punto sobre la varianza del predictor: tenemos mayor precisión en la región donde se concentran los datos que en los extremos poco muestreados.
@@ -188,7 +231,17 @@ El procedimiento con `pwr.f2.test()` es muy similar al ya visto en la clase ante
 Si quisiéramos **replicar** este hallazgo con la muestra más pequeña posible que garantice un 80% de poder, ¿cuántos participantes necesitaríamos?
 
 ```{r}
+PC <- length(coef(MODELOC))
+eta2_corregido <- 1 - (1 - PRE) * (n - PC) / (n - PA)
+f2 <- eta2_corregido / (1 - eta2_corregido)
+resultado <- pwr.f2.test(
+  u = PA - PC,
+  v = NULL, 
+  f2 = f2,
+  sig.level = 0.05,
+  power = 0.80)
 
+ceiling(resultado$v) + PA
 ```
 
 Una replicación exitosa con 80% de poder requeriría considerablemente menos participantes que los 592 del estudio original. Eso no significa que ese número sea suficiente para cualquier propósito: el análisis de poder fija un mínimo estadístico, no garantiza representatividad ni validez externa. Lo que sí ilustra es que la relación observada entre extraversión y amabilidad es lo suficientemente grande como para detectarse incluso con muestras pequeñas.

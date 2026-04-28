@@ -1,0 +1,126 @@
+---
+title: "Tarea B"
+author:
+  - Nombre estudiante
+editor: visual
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, eval=FALSE}
+install.packages("remotes")
+```
+
+```{r, eval=FALSE}
+remotes::install_github("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_gitlab("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_bitbucket("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r}
+require(ggplot2)
+require(ps0046)
+require(dplyr)
+require(pwr)
+```
+
+# Instrucciones generales
+
+1.  Cada pregunta debe contestarse con base en lo abordado en clase.
+2.  Las tareas únicamente podrán entregarse mediante el vínculo respectivo habilitado en Mediación Virtual.
+3.  Solamente se aceptará la entrega de un archivo .qmd con las respuestas a cada pregunta.
+4.  No se realizarán revisiones de la tarea antes de su entrega definitiva en Mediación Virtual.
+
+# Aspectos por calificar
+
+-   Todo el código de R es correcto, necesario y suficiente para contestar las preguntas (5 pts)
+-   Todo el código de R se basa en el utilizado en las clases (5 pts)
+-   Todas las interpretaciones son correctas, necesarias y suficientes para contestar las preguntas (5 pts)
+-   Todas las interpretaciones se basan en los contenidos abordados en las clases (5 pts)
+-   Entrega la tarea en Mediación Virtual antes de la fecha y hora límite indicadas en Mediación Virtual (1 pt)
+-   Al ejecutar **Run All**, todo el código de R del archivo .qmd se ejecuta sin errores (1 pt)
+-   Presenta todas las respuestas en los espacios designados para estas (1 pt)
+-   Todas las respuestas generadas con código de R se presentan clara y explícitamente al ejecutarlo (1 pt)
+-   No hay errores de redacción en las interpretaciones (1 pt)
+
+# Contexto
+
+[Cosgrove (2026)](https://doi.org/10.1016/j.paid.2025.113567) examinó algunos correlatos psicológicos de las creencias conspirativas en una muestra de 354 participantes estadounidenses reclutados en línea. Entre las variables medidas se incluyen la mentalidad conspirativa (evaluada mediante el *Conspiracy Mentality Questionnaire*) y una serie de rasgos de personalidad y estilos cognitivos como el narcisismo grandioso, la necesidad de singularidad, el pensamiento dicotómico, la reflexión cognitiva y la flexibilidad cognitiva.
+
+El conjunto de datos disponible para esta tarea corresponde al primer estudio del artículo y está almacenado en el data frame `conspiracy`, incluido en el paquete `ps0046`. La variable de respuesta es la puntuación total en el *Conspiracy Mentality Questionnaire* y los predictores de interés son **variables continuas**.
+
+Para conocer el detalle de las variables disponibles, ejecute `help(conspiracy)`.
+
+# Preguntas
+
+Guarde el objeto `conspiracy` en un objeto llamado `datos`.
+
+```{r}
+
+```
+
+## Pregunta 1
+
+Asuma que `conspiracy` es una población, no una muestra. Lleve a cabo una simulación con 10 000 muestras para construir las distribuciones muestrales de la media y de la mediana de la puntuación total del *Conspiracy Mentality Questionnaire*. Grafique ambas distribuciones en un mismo histograma y posteriormente muestre sus varianza. Comente cuál estimador es más eficiente y por qué esa propiedad es relevante para justificar el uso de la media como estimador en un modelo lineal de un parámetro.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 2
+
+Con `lm(),` estime un modelo lineal que prediga una constante para todas las puntuaciones totales del *Conspiracy Mentality Questionnaire*s. Muestre el SSE de tres formas distintas: (1) mediante `anova()`, (2) con `sigma()` y con `residuals()`. Los tres resultados deben ser iguales. Con ayuda de un chatbot (ChatGPT, Gemini, Claude o Qwen) genere un comentario que explique por qué las tres funciones producen el mismo SSE.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 3
+
+Estime un modelo lineal de un parámetro con `lm()`. Calcule el PRE y el estadístico $F$ que compara este modelo con el modelo de la pregunta anterior. Comente por qué no es suficiente el PRE, es decir, por qué es necesario calcular también el estadístico $F$.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 4
+
+Estime un modelo de dos parámetros con `lm()`. Muestre los coeficientes estimados e intervalos de confianza al 95%. **No** utilice la función `summary()`. Comente el significado de cada coeficiente y del intervalo de confianza alrededor de la pendiente.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 5
+
+Calcule el PRE, el estadístico $F$ y el valor $p$ que resultan de comparar el modelo de un parámetro con el modelo de dos parámetros. Comente el significado del valor $p$ en este contexto. Su respuesta no debe limitarse a indicar si el resultado es o no estadísticamente significativo con base en la comparación con 0.05.
+
+```{r}
+
+```
+
+**Comentario:**
+
+## Pregunta 6
+
+¿Qué tamaño muestral requeriría un futuro estudio de replicación que deseara detectar un efecto de la misma magnitud que el observado en la pregunta 5, con un poder estadístico del 80% y $\alpha = .05$? Utilice la estimación corregida de $\eta^2$ para el cálculo. Comente qué significa el poder estadístico de 80%.
+
+```{r}
+
+```
+
+**Comentario:**
