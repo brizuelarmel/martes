@@ -57,7 +57,7 @@ $$
 
 # Ejemplo: amabilidad y extraversión en Costa Rica
 
-Una pregunta interesante en psicología de la personalidad podría ser en qué medida las dimensiones del modelo del *Big Five* son independientes entre sí. El meta-análisis de van der Linden, te Nijenhuis y Bakker (2010) reporta correlaciones positivas pequeñas y moderadas entre **Extraversión** y **Amabilidad**.
+Una pregunta interesante en psicología de la personalidad podría ser en qué medida las dimensiones del modelo del *Big Five* son independientes entre sí. El meta-análisis de [van der Linden, te Nijenhuis y Bakker (2010)](https://doi.org/10.1016/j.jrp.2010.03.003) reporta correlaciones positivas pequeñas y moderadas entre **Extraversión** y **Amabilidad**.
 
 Utilizamos el dataframe `big5CR` para examinar esta relación en una muestra costarricense: ¿es la extraversión un predictor útil de la amabilidad?
 
