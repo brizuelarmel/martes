@@ -1,0 +1,200 @@
+---
+title: "06 Modelo de dos parámetros: regresión simple con un predictor continuo"
+author:
+  - Armel Brizuela Rodríguez
+language:
+  es:
+  title-block-author-single: "Autor"
+editor: visual
+editor_options:
+  chunk_output_type: console
+format: html
+---
+
+```{r, eval=FALSE}
+install.packages("remotes")
+```
+
+```{r, eval=FALSE}
+remotes::install_github("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_gitlab("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r, eval=FALSE}
+remotes::install_bitbucket("brizuelarmel/ps0046", force = T, dependencies = T, upgrade = "always")
+```
+
+```{r}
+require(ggplot2)
+require(ps0046)
+require(broom)
+require(dplyr)
+require(pwr)
+```
+
+# Del modelo simple al modelo con un predictor
+
+Hasta ahora el modelo producía la misma predicción para todas las observaciones: $Y_i = \beta_0 + \varepsilon_i$. En la gran mayoría de aplicaciones este modelo es insuficiente porque el interés no está en estimar una media, sino en **explicar** por qué unas observaciones tienen valores altos y otras, bajos en $Y_i$. Para eso necesitamos un modelo cuyas predicciones varíen entre observaciones en función de otra variable.
+
+El modelo de dos parámetros con un predictor continuo $X_i$ es:
+
+$$
+Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i
+$$
+
+$$
+Y_i = b_0 + b_1 X_i + e_i
+$$
+
+La predicción ya no es constante, ya que cada observación recibe una predicción **condicional** a su valor en $X_i$.
+
+$$
+\hat{Y}_i = b_0 + b_1 X_i
+$$
+
+# Ejemplo: amabilidad y extraversión en Costa Rica
+
+Una pregunta interesante en psicología de la personalidad podría ser en qué medida las dimensiones del modelo del *Big Five* son independientes entre sí. El meta-análisis de van der Linden, te Nijenhuis y Bakker (2010) reporta correlaciones positivas pequeñas y moderadas entre **Extraversión** y **Amabilidad**.
+
+Utilizamos el dataframe `big5CR` para examinar esta relación en una muestra costarricense: ¿es la extraversión un predictor útil de la amabilidad?
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+# Significado de los parámetros
+
+-   $b_0$ (intercepto): valor predicho de $Y_i$ cuando $X_i = 0$. Si $X_i = 0$ queda fuera del rango observado, el intercepto no tiene interpretación sustantiva directa.
+
+-   $b_1$ (pendiente): cambio predicho en $Y_i$ por cada unidad que aumenta $X_i$. Es constante para cualesquiera valores de $X_i$ que estén a una unidad de distancia. Su signo indica la dirección de la asociación: positivo significa que $Y_i$ aumenta conforme $X_i$ aumenta y negativo implica que cuando $X_i$ aumenta, $Y_i$ disminuye.
+
+# Estimación con `lm()`
+
+Los mismos argumentos que llevaron a estimar $\beta_0$ con la media muestral (minimizar el SSE asumiendo errores normales) aplican aquí. La función `lm()` encuentra los valores de $b_0$ y $b_1$ que minimizan $SSE = \sum(Y_i - \hat{Y}_i)^2$.
+
+```{r}
+
+```
+
+-   $b_0 = 2.792333$: Cuando `extraversion` es igual a 0, el valor predicho de amabilidad es aproximadamente 2.8.
+
+-   $b_1 = 0.277807$: Cuando extraversión aumenta en 1, amabilidad aumenta en aproximadamente 0.28.
+
+El modelo lineal de dos parámetros define una línea recta que se aproxima lo más posible a todos los valores simultáneamente.
+
+```{r}
+
+```
+
+El error típico de predicción, es decir, la magnitud promedio de los residuos alrededor de la recta es:
+
+$$
+RMSE = \sqrt{MSE} = \sqrt{\frac{SSE}{n-2}} = s
+$$
+
+```{r}
+
+```
+
+# Inferencia sobre la pendiente: ¿es útil el predictor?
+
+La pregunta "¿la extraversión predice la amabilidad?" se traduce como: ¿la pendiente es distinta de cero? La comparación de modelos es:
+
+-   **Modelo C:** $Y_i = \beta_0 + 0 \cdot X_i + \varepsilon_i = \beta_0 + \varepsilon_i$ (pendiente fijada en 0)
+-   **Modelo A:** $Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i$
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+Dado que es poco probable ($p = 0.0000000000000002627$) observar una $F = 71.088$ si se asume que el modelo A genera el mismo error que el modelo C, rechazamos el modelo C y concluimos que $X_i$ reduce significativamente el error con respecto a simplemente utilizar la media de amabilidad.
+
+Es importante notar que el mejor estimador de $\beta_0$ **no** es el mismo en el modelo C que en el modelo A: en C es la media de $Y_i$; en A depende de $X_i$ y en general difiere de $\bar{Y}$. El estimador óptimo de un parámetro depende de qué otros parámetros se estimen en el modelo.
+
+# La correlación de Pearson como un caso particular
+
+Cuando se compara un modelo aumentado de dos parámetros con un modelo compacto de un solo parámetro (solo intercepto), la raíz cuadrada del PRE equivale al **coeficiente de correlación de Pearson** entre $X_i$ y $Y_i$:
+
+$$
+r = \pm\sqrt{\text{PRE}}
+$$
+
+El signo de $r$ coincide con el de la pendiente.
+
+```{r}
+
+```
+
+El PRE es entonces $r^2$ cuando se compara un modelo con un solo predictor contra un modelo sin predictores. Probar si $\beta_1 \neq 0$ equivale a probar si la correlación poblacional es distinta de cero.
+
+# Intervalo de confianza para la pendiente
+
+`confint()` devuelve el rango de valores de $\beta_1$ para los cuales no se rechazaría el modelo C.
+
+```{r}
+
+```
+
+En el contexto del modelo de dos parámetros aparece un nuevo factor que afecta el ancho del intervalo: **la varianza del predictor**. Cuanto mayor sea la varianza de $X_i$, más angosto/preciso es el intervalo para $\beta_1$. En términos prácticos, muestrear ampliamente a lo largo del rango de valores posibles del predictor aumenta la precisión de la estimación.
+
+# Centrado del predictor
+
+**Centrar** un predictor significa restarle su media: $X_i^* = X_i - \bar{X}$. La nueva variable centrada pasa a tener media igual a 0.
+
+```{r}
+
+```
+
+Dos consecuencias:
+
+1.  La **pendiente no cambia**: es la misma recta sobre los mismos datos, solo se movió el eje horizontal.
+2.  El **intercepto pasa a ser** $\bar{Y}$: la predicción cuando $X_i^* = 0$ equivale a la predicción cuando $X_i = \bar{X}$, y la recta siempre pasa por el punto $(\bar{X}, \bar{Y})$.
+
+```{r}
+
+```
+
+El SSE, el MSE y el valor $p$ de la pendiente son idénticos al modelo sin centrar. El centrado solo reubica el cero del eje $X$.
+
+# Intervalos de confianza para valores predichos
+
+Con el modelo ajustado, podemos generar un intervalo de confianza para el **valor predicho** a cada nivel del predictor:
+
+```{r}
+
+```
+
+El intervalo es **más angosto cerca de** $\bar{X}$ y se ensancha hacia los extremos del predictor. La intuición es la misma del punto sobre la varianza del predictor: tenemos mayor precisión en la región donde se concentran los datos que en los extremos poco muestreados.
+
+# Análisis de poder
+
+El procedimiento con `pwr.f2.test()` es muy similar al ya visto en la clase anterior: $P_A - P_C = 1$ (un parámetro adicional: la pendiente) y $n - P_A = n - 2$.
+
+Si quisiéramos **replicar** este hallazgo con la muestra más pequeña posible que garantice un 80% de poder, ¿cuántos participantes necesitaríamos?
+
+```{r}
+
+```
+
+Una replicación exitosa con 80% de poder requeriría considerablemente menos participantes que los 592 del estudio original. Eso no significa que ese número sea suficiente para cualquier propósito: el análisis de poder fija un mínimo estadístico, no garantiza representatividad ni validez externa. Lo que sí ilustra es que la relación observada entre extraversión y amabilidad es lo suficientemente grande como para detectarse incluso con muestras pequeñas.
+
+# Comparaciones con más de un grado de libertad
+
+Es técnicamente posible comparar un modelo A de dos parámetros contra un modelo C de 0 parámetros, en el cual se fijarían **ambos** parámetros (intercepto y pendiente) a ciertos valores de interés.
+
+Estas comparaciones funcionan estadísticamente (con $P_A - P_C = 2$ en el numerador del $F$), pero son **poco informativas**: si se rechazara el modelo C, no se sabría si fue por el intercepto, por la pendiente, o por ambos. En general en el libro se prefiere reservar las pruebas para comparaciones donde $P_A - P_C = 1$, de modo que el rechazo tenga una interpretación inequívoca.
